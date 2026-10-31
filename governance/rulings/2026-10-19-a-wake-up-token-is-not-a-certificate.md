@@ -1,0 +1,42 @@
+# A wake-up token may be a file test; a certificate may not
+
+**Date:** 2026-10-19 · tick 14:33:25 PDT (`arcade-window-watch`, job `67530e415818`, samples 14:22:25 `no_change` 155 B → this one)
+**Diff:** `planner_at=planner` (IDENTICAL both sides — no flip, no `@ocho`) · **`kev_window=closed → open`**
+**Method:** every number below is a disk/journal/NVML read from this tick (14:33:30–14:36:03). Nothing recalled; nothing carried from a prior tick's figure.
+
+## The transition
+
+```
+planner_at=planner kev_window=closed     (previous sample 14:22:25, suppressed)
+planner_at=planner kev_window=open       (this sample 14:33:25; detector re-run at 14:34:49 identical)
+```
+
+Open edge is bracketed `(14:22:25, 14:33:25.139]` and dated more tightly by the acquire artifact: `scopes/planner/record.json` **inode born 14:30:32.8628**, dir `scopes/planner/` born **.8598**.
+
+## What is measured
+
+**1. The card, five identical reads 14:33:30–14:35:36 (three consecutive at 8 s spacing, plus the first two):** `used 1760 / free 6131` MiB of 8192, unchanged to the MiB. Tenants: pid **2434** PrismML-Bonsai 9B `--n-gpu-layers 0` **1364** MiB and pid **2436** LFM vision **134** MiB, both started **13:23:01** on this boot (13:22:46) — no tenant appeared or departed around the edge, so the admission below priced the same ~6131 MiB. Gate is **4289** (4033 + 256): the window is open by **+1842 MiB**. `/running` on :8080 = `{"running":[]}`; **nothing listens on :5805/:5806**.
+
+**2. `planner_at=planner` is a GHOST at this moment — `[ -f record.json ]` cannot tell an attempt from a load.**
+`record.json` 490 B sha256 `4610ac30…fcdfe`, born/mtime/ctime `14:30:32.8628/.8648/.8658`, `owner llama-swap-ocho-planner · class batch · need_mib 6200 · headroom 256 · mode run · pid 57470 (**DEAD**) · acquired_at 1792445432 = 14:30:32 · expires 2026-10-20 14:30:32 · ttl 86400`.
+Its round: `ocho-planner-polymarket.service` **Starting 14:30:26 → exit status=1 14:30:33** (6.199 s, 143.8 MB peak), llama-swap `group: starting ocho-planner failed: aborted` + 500 on `/v1/chat/completions`. So the record existed **~0.1 s before** the failure and survives it by **≥ 5 minutes**, while `/running` is empty and no `llama-server` of any planner rung is resident. `planner_at=planner` and `kev_window=open` are being emitted *simultaneously for the same event*: the planner failed, therefore the card stayed free.
+
+**3. The residue dates the kill, and the arithmetic says the kill landed after a REFUSAL.**
+Admission is `need + headroom` = **6456** vs **6131** free = **325 MiB short**. `gpu-lease.sh` writes the record inside `take_lease` *before* `read_card` (:505–526) and on every refusal path calls `do_release_quiet` (:512, :534, :543, :557) — so a surviving record proves the wrapper died **between `take_lease` and release**, i.e. inside the drain/refusal window. Consistent with: the short path refused, and the 500/abort killed the wrapper before it could clean up. Not asserted as exclusive — the abort could equally have arrived during the drain — but the *residue* is itself the probe: a scoped record that ought to have been released and is still there is evidence of abnormal termination, not merely a stale flag.
+
+## Rulings
+
+**R1 — A wake-up token may be a file test; a certificate may not.** This job's prompt wires `planner_at global -> planner` straight into a message to Ocho asserting *"the scoped-planner flip is confirmed live end-to-end"*. But `planner_at` is computed as `[ -f scopes/planner/record.json ]` (watcher :29–30), and the record is written at **acquire** — so the token attests an **attempt**, and a failed attempt mints exactly the same token as a successful load. The confirming claim must be re-earned by the consumer from the artifact (**holder pid alive** *and* **a resident scoped app**: `/running`, `/health`, a `:5805/:5806` llama-server), never inherited from the token's name. A detector is allowed to be a cheap wake-up; it is not allowed to discharge a certification. EXTENDS `2026-10-13-a-fresh-record-from-a-failed-acquire` R1 (it owns the *mechanism* — record written by `take_lease` before the wrapped command runs, so freshness manufactures itself on the failure path); the new part is the *consumer obligation* the token was silently carrying. FIX PROPOSED, NOT APPLIED: `planner_at` gains a liveness qualifier (`planner` only when the record's pid answers `kill -0`; `planner-stale` otherwise) **and** the prompt's bullet map gains that token — the two must land together, because a new token in the detector without a rule in the prompt is a state change nobody is told how to read.
+
+**R2 — A refusal widens the window it declined to fill, so "open" is not the same as "available".** Here the open edge is not a release: the planner was **325 MiB short** and refused, leaving 6131 free. Compare `2026-10-14-a-window-opened-by-a-failed-load` (a failed load's symptom, owned there — cited, not restated): the distinction this tick adds is that the refusal was **priced and correct** (6456 vs 6131, not an OOM, not a fault), so the window is neither capacity nor a symptom but the *mirror image of the primary rung's price*. Read as capacity it invites an acquisition that duplicates the refusal; read as a symptom it hides a genuinely admittable card. It is genuinely admittable **for Kev**: `--scope arcade` conflicts only with its own scope (`gpu-lease.sh` :487–502, other scopes co-reside), the dead foreign-scoped record is not a veto, and 6131 ≥ 4289 by 1842.
+
+**R3 — A record's owner string names the rung, not the holder.** Successful scoped leases read `llama-swap-ocho-planner-4b` (need 3800, e.g. 13:50:31); this one reads `llama-swap-ocho-planner` (need 6200). Owner is therefore *not* a discriminator between "4B resident" and "9B attempted", and must not be used as one; only pid liveness plus a resident app separate the two.
+
+## Actions taken / not taken
+
+- **No acquisition, no model load, no run triggered.** `gpu-lease.sh`, `llama-swap.yaml` (mtime 10-12 12:11:41), the planner lease, the driver stack: untouched. Nothing written outside `governance/`.
+- **No `@llama`.** He is self-authorized at `--scope arcade` on his own poll, and his lane is certifiably alive: `profiles/llama/cron/ticker_heartbeat` = `1792445663.909` = **14:34:23**, **13 s** before my read. The fallback clause is not met — this is the window's **first** sample; it is written down here so it cannot be invented later as "two ticks" when only one existed: page only if **two consecutive samples** are open, his heartbeat is live, no `arcade/kev/model-test` lease exists (`find gpu-lease -type f` = `lease.mutex` + `scopes/planner/record.json` only), **and** the gate is still clear at the moment of sending — which per `2026-10-19-a-fallback-that-fires-on-a-suppressed-tick-delivers-nothing` R1 a **suppressed** sample cannot do, so the fallback is currently unexecutable by construction and the repair is the channel, not a page.
+- **No `@ocho`.** Token identical on both sides; his scoped-planner item closed 2026-10-13 (state.db 9249/9267) and nothing here reopens it. Had a `global -> planner` transition occurred on this very record, R1 says the prescribed message would have been **false**: the flip would have been "confirmed" by a dead holder and an empty `/running`.
+- **Prediction for the next tick** (published, per `2026-10-16-a-predicted-hand-back-is-an-entry-not-an-event` R1): the window closes at the first round whose weighted pick is 4B (4056) or smol (3256), because a successful load writes a live-pid record and takes 3482 MiB; it stays open through 9B picks (6456 > 6131, short 325). Next round **14:40:00**. Falsifier: a 9B round succeeding while 2434 lives (my pricing is wrong), or the window closing on a 9B-picked round.
+
+Read-only throughout (nvidia-smi ×5 + 3-read confirmation, two detector runs, `/running`, `systemctl --user`, `journalctl --user`, `ps`, `stat`/`sha256sum`, `find`, `grep`). `priorart.py` run BEFORE the file existed (240 records; max REVIEW `0.266` `a-fresh-record-from-a-failed-acquire`, read by eye, owns the write-ordering mechanism and is cited not restated; `0.150` `a-pick-that-finds-the-slot-resident-is-not-a-load`, `0.112` `a-token-records-the-crossing-not-the-magnitude`, `0.099` `a-window-opened-by-a-failed-load`, all read by eye); `check_index.py` after. **Flagged for Mike, not acted on:** `planner_at` cannot attest a load, and the one message it authorises is a confirmation — the token and its prompt bullet need the liveness qualifier together.

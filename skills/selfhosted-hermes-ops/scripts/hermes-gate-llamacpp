@@ -1,0 +1,34 @@
+#!/bin/sh
+# systemd health gate: wait for the supervised llama.cpp runtime to answer /health.
+#
+# The runtime port is OS-assigned and changes on every restart, so this reads the
+# record `hermes serve` publishes instead of hardcoding a literal. Use this as an
+# ExecStartPost/ExecStartPre; never inline a port into the unit.
+#
+#   ExecStartPost=/home/chilly1/bin/hermes-gate-llamacpp
+#
+# Env overrides: GATE_TRIES (default 60), GATE_SLEEP (default 2).
+set -u
+
+SRV="${HERMES_HOME:-$HOME/.hermes}/runtimes/llamacpp/server.json"
+TRIES="${GATE_TRIES:-60}"
+SLEEP="${GATE_SLEEP:-2}"
+
+i=0
+while [ "$i" -lt "$TRIES" ]; do
+    if [ -r "$SRV" ]; then
+        # base_url is http://127.0.0.1:<port>/v1 -> probe the same host/port on /health
+        base=$(sed -n 's|.*"base_url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*|\1|p' "$SRV" | head -n1)
+        port=$(printf '%s' "$base" | sed -n 's|.*:\([0-9][0-9]*\)/v1.*|\1|p')
+        if [ -n "$port" ] && curl -fsS -o /dev/null --max-time 3 "http://127.0.0.1:$port/health" 2>/dev/null; then
+            echo "llamacpp healthy on 127.0.0.1:$port"
+            exit 0
+        fi
+    fi
+    i=$((i + 1))
+    [ "$i" -lt "$TRIES" ] && sleep "$SLEEP"
+done
+
+echo "llamacpp runtime did not become healthy within $((TRIES * SLEEP))s" >&2
+echo "expected record: $SRV" >&2
+exit 1

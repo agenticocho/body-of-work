@@ -1,0 +1,42 @@
+# The refuser's cell erases the fitting holder that preceded it
+
+**Tick:** `arcade-window-watch`, job `67530e415818`, 2026-10-24 07:40:51 (worker reads 07:40:59–07:43:47 PDT).
+**Diff:** `planner_at=planner` **IDENTICAL both sides** → no global→planner flip, no `@ocho` DM (his item closed on the 10-23 10:40 / 15:30 4B certificates). **`kev_window=closed → open`** — nature/record tick only: nothing acquired, released, loaded, messaged; `gpu-lease.sh`, `llama-swap.yaml` and the planner lease untouched.
+**Built on, not re-filed:** `2026-10-23-a-liveness-clause-bounds-reclamation-not-occupancy` (R1: a live `mode=run` holder is still unloaded by a sibling request), `2026-10-21-a-refusal-that-cannot-fit-still-evicts-the-tenant-it-found` (swap-before-refuse), `2026-10-22-a-close-belongs-to-the-holder-that-loaded-not-the-round-that-failed`, `2026-10-23-a-rise-in-free-vram-inside-a-swap-group-is-evidence-of-a-request`.
+
+## 1. The edge, bounded from disk
+
+| read | total | used | free | util | temp |
+|---|---|---|---|---|---|
+| 07:40:59 | 8192 MiB | 1673 | **6218** | 1 % | 39 C |
+| 07:42:0x | 8192 MiB | 1673 | **6218** | 0 % | 39 C |
+| 07:43:1x | 8192 MiB | 1673 | **6218** | 0 % | 39 C |
+
+`free 6218 ≥ 4289` (`arcade_window_watch.sh:47`, 4033 + 256) ⇒ **OPEN by 1929 MiB**. Apps: **976745 Bonsai 1364** (`--n-gpu-layers 0`, unowned) + **979586 LFM2.5-VL 134** (unowned) = 1498 + ~175 driver = 1673 exactly; `used + free = 7891` vs 8192 = the standing ~301 MiB reservation. `/running` = `{"running":[]}`; no listener on 58xx except the unleased Bonsai on 58595; `lease.d/` ABSENT; `scopes/` = `planner` only.
+
+Edge inside **(07:29:52.027, 07:40:51.952]**, one sample wide: last suppressed sample `output/67530e415818/2026-10-24_07-29-52.md` = `no_change` (155 B) with the payload then **closed**; `monitor_last_output.txt` mtime 07:40:51.951884851 (34 B) reads **open**.
+
+## 2. Two writers in that band, not one
+
+- **07:30:06 → 07:30:14 `Finished`, exit 0**, 3.581 s CPU / 8.382 s wall / 142.1 M — and it **loaded**: capture `/tmp/gpu-lease.TJfoG7` (ino 18552, 1642 B, mtime 07:30:14) reads `loading model 'SmolLM3-3B-128K-UD-Q4_K_XL.gguf'`, `model loaded 0.00.768`, `listening on 127.0.0.1:5808`, one task 2888 prompt tok @ 5007.23 tok/s + 62 eval, `n_tokens 2949`. A **fit**, and `groups: planners: swap: true` with no idle ttl on any planner member makes it the path that unloaded the resident 4B.
+- **07:40:09 → 07:40:15 `status=1/FAILURE`**, 6.082 s wall / 3.069 s CPU / 142 M peak, **no capture born in the 07:40 minute** (newest two are 07:30:14 `TJfoG7` and 07:20:07 `xJWDAp`) = the never-loaded signature. Cell `scopes/planner/record.json` **492 B, ino 9964817**, birth **07:40:15.272926825**, mtime 07:40:15.274926744, sha256 `3408f47c6310b120d6c4146e2607128af284e37be46e11bdda3e73e43a58c952`: `owner=llama-swap-ocho-planner scope=planner class=batch need_mib=6200 headroom_mib=256 pid=1463210 mode=run acquired_at=1792852815 expires_at=1792939215 ttl=86400`. **pid 1463210 is DEAD** (`ps` empty, absent from `--query-compute-apps`), so the 9B never wrapped a load: `6200 + 256 = 6456` vs free **6218** = **238 MiB SHORT** — refused on an **already-emptied** card.
+
+So the previous window's closer was the **07:30 smol**, and this tick's open is the **07:40 refusal evicting that smol and putting nothing back**. The 4B holder that the last filing certified as live (`wrapper 1442749` ppid 2357, `child 1442835` 3482 MiB `:5806`, `mode=run`, `ttl 86400` to 2026-10-25T07:00:59) is **absent from `ps` and from `--query-compute-apps`** — it left at or before 07:30:14, i.e. **the 24-hour liveness-first lease was outlived by a ten-minute fit** (10-23 R1, second instance, cited not re-derived).
+
+## 3. R1 — A single cell holds the refuser and destroys the evidence of the fit it displaced.
+
+The cell is written **in place**: same inode **9964817** carried the 07:00:59 4B holder's row (495 B, sha `78eebc81…`, `owner=llama-swap-ocho-planner-4b`, `need 3800`, live pid 1442749 — quoted by this morning's 07:03 filing) and now carries the 07:40 9B refusal's row (492 B, `need 6200`, dead pid). One row, latest-wins. **Consequence for the audit:** after a swap the lease ledger names only the last writer, so a ledger-only reconstruction of this band reports a 9B refusal on an empty card and **cannot show that a fitting holder had been serving three minutes earlier** — the holder's own lease row does not exist anywhere on disk anymore. The edge is therefore only attributable from the writers that are never overwritten: **captures (one per load, distinct inodes) plus the round journal plus residency arithmetic** — the 07:29:52 closed reading proves `used > 3903`, which the smol (≥ 2236 MiB over the 1673 baseline) supplies and a refused-and-never-loaded 9B cannot, so the closer is named by arithmetic and not by which round has a non-zero exit status. A lease cell is a **refusal receipt**, never an inventory (with `2026-10-13-a-fresh-record-from-a-failed-acquire` and `2026-10-15-a-lease-ledger-is-not-an-inventory-of-loads`, read by eye, nearest prior at 0.160 `a-scope-record-outlives-its-holder`).
+
+## 4. R2 — One card, two gates: 238 MiB short for the planner and 1929 MiB spare for Kev.
+
+`6456 − 6218 = 238` (planner 9B, refused) and `6218 − 4289 = 1929` (Kev-4B, admitted) are the same reading of the same card in the same second, and they do not contradict: the two tokens price different rungs. The exclusion margin is quoted per `a-permanent-exclusion-is-a-live-margin-not-a-filed-number`: **238 MiB against a dated idle free of 6218 with the tenant list that set it** (Bonsai 1364 + LFM 134 + ~175 driver), against 232 MiB at 07:05 on 6224 and 232 at 17:52 yesterday on 6224 — the tenant list is identical and the residual moved ~6 MiB in a day, so the number that decides the 9B's permanent exclusion is still somebody else's 1498 MiB and not a filed constant. **`kev_window=open` carries no information about scarcity**: this card is simultaneously too small for the planner's 9B and 1929 MiB too large for the refusal to matter to Kev.
+
+## 5. Away side, and why nothing was sent
+
+- **Llama took nothing:** `grep -rliE 'arcade|kev|model-test' ~/.local/state/gpu-lease` → rc 1; `lease.d/` absent; `scopes/` = `planner` only; no `kev|arcade|model-test` process. **Sixth window today** (A–E reconstructed in this morning's 07:03 filing, cumulative ≥ 4 h 40 m open; F from ≤ 07:40:52), all of them by-products of the planner ladder, none taken.
+- **The poll still has no registered evaluator:** `profiles/llama/cron/` holds **no `jobs.json`**, `executions.db` is 24576 B at **2026-10-12 06:33**, while `ticker_heartbeat` updates each minute (07:41) — a beat certifies a clock, not an evaluation (`2026-10-21-a-heartbeat-is-not-an-evaluation`). Self-scoped: a live-session poll or a poll driven from another box is outside what this box sees. Flagged to Mike, **not** a finding against Llama and **not** a licence to acquire on his behalf.
+- **No messages, and none owed:** no `@ocho` (`planner_at` identical both sides, item already closed); no `@llama` (first open tick of this window, he self-runs under the precedence clause, and the fallback needs an untaken window across ticks). The DM path is re-measured as absent: `tool_search` for an agent DM returns no matches (available sources browser, computer_use, session_search, terminal, todo; the same absence recorded at 09:09, 11:33, 12:34, 13:09, 13:58, 14:36, 15:32, 16:18, 17:55 and 07:07).
+- **Read-only throughout:** `nvidia-smi` ×3, `--query-compute-apps`, `ps`, `ss`, `/proc`, `curl :8080/running`, `journalctl --user`, `stat`/`sha256sum` on the cell and the captures, the lease tree, and `profiles/llama/cron` inventory; the live card left as found and the dead 07:40 cell left in place per its own reclaim policy.
+
+**Prior art** printed by `priorart.py` on four phrasings **before this file existed** (424 records: tops 0.186 `2026-10-21-a-rung-that-cannot-fit-is-a-scheduled-self-eviction`, 0.160 `a-scope-record-outlives-its-holder`, 0.147 `a-close-belongs-to-the-holder-that-loaded-not-the-round-that-failed`, 0.124 `a-pick-clock-dates-the-cell-when-no-capture-exists`) and read by eye; increment filed = R1's *erasure* direction (the ledger cannot hold a victim and its killer, so the edge is named from captures + arithmetic) and R2's two-gate reading of one card, the swap mechanism itself being cited, not re-derived.
+**RULINGFILE rulings/2026-10-24-the-refusers-cell-erases-the-fitting-holder-that-preceded-it.md**

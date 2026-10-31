@@ -1,0 +1,29 @@
+#!/bin/sh
+# systemd health gate: wait for `hermes serve` to answer its readiness endpoint.
+#
+# Two facts that make the obvious command fail:
+#   1. `hermes serve` exposes /api/health, NOT /health (that path is llama.cpp's).
+#   2. A serve unit bound to a tailnet IP answers there and refuses 127.0.0.1 on
+#      the same port -- a real listener that looks dead.
+#
+#   ExecStartPre=/home/chilly1/bin/hermes-gate-serve
+#
+# Env overrides: SERVE_HEALTH_URL, GATE_TRIES (default 30), GATE_SLEEP (default 2).
+set -u
+
+URL="${SERVE_HEALTH_URL:-http://<TAILNET-IP-THIS-BOX>:9119/api/health}"
+TRIES="${GATE_TRIES:-30}"
+SLEEP="${GATE_SLEEP:-2}"
+
+i=0
+while [ "$i" -lt "$TRIES" ]; do
+    if curl -fsS -o /dev/null --max-time 3 "$URL" 2>/dev/null; then
+        echo "hermes serve healthy at $URL"
+        exit 0
+    fi
+    i=$((i + 1))
+    [ "$i" -lt "$TRIES" ] && sleep "$SLEEP"
+done
+
+echo "hermes serve did not become healthy at $URL within $((TRIES * SLEEP))s" >&2
+exit 1

@@ -1,0 +1,269 @@
+# A window opened by refusals is the planner lane's outage — and its width is a count of picks
+
+**Date:** 2026-10-21 · tick 15:52:41 PDT (`arcade-window-watch`, job `67530e415818`; previous persisted sample `planner_at=planner kev_window=open` at `last_run_at` 15:41:41.377818, detected change `last_changed_at` 15:52:41.362713)
+**Diff:** `planner_at=planner` **IDENTICAL both sides** → no flip, **no `@ocho` DM** · **`kev_window=open → closed`**
+**Method:** every figure below is a read from this tick (15:52:46–15:56:05 PDT): three `nvidia-smi` reads 2 s apart, `--query-compute-apps`, the lease tree on disk, `ps` + `/proc`, `curl :8080/running`, `ss`, `journalctl --user`, `stat` + `sha256sum`, `sqlite3 -readonly`, the planner's own pick log. Nothing recalled from a prior tick's number; the two prior figures cited by value (the 14:50 record birth, the 14:30 plan mtime) come from `rulings/2026-10-21-a-refusal-that-cannot-fit-still-evicts-the-tenant-it-found.md` and are marked as **cited, not re-measured**, because the record and the plan file have both been rewritten since.
+
+## 1. What changed, measured
+
+```
+15:41:41   planner_at=planner  kev_window=open     (previous run's sample)
+15:50:09   close edge — a fitting 4B rung loaded (artifacts below)
+15:52:41   planner_at=planner  kev_window=closed   (this tick)
+```
+
+Live card at write, numeric-validated, **three identical reads** (15:55:5x / :57 / :59, and a fourth at 15:56:05 on the way out):
+
+```
+NVIDIA GeForce RTX 3060 Ti   total 8192   used 5111   free 2781 MiB   util 0 %   40 C   driver 615.71.09
+  pid   2812  Bonsai demo llama-server          1364 MiB   (--n-gpu-layers 0, unleased)
+  pid   2813  LFM2.5-VL vision llama-server      134 MiB   (--n-gpu-layers 0, unleased)
+  pid 994544  scoped planner llama-server       3482 MiB   <- the close edge, resident
+  sum 4980 of 5111 used ; used+free 7892 vs 8192 = the ~300 MiB driver reservation in neither column
+```
+
+`free 2781 < 4289` (4033 Kev-4B peak + 256 headroom) → **CLOSED by 1508 MiB**. `6268` remains the reachable ceiling with the scope empty (the figure every open edge today quoted).
+
+## 2. The close edge is a fitting 4B pick that loaded and did the lane's work
+
+Record `~/.local/state/gpu-lease/scopes/planner/record.json` — 494 B, ino `8783964`, birth `15:50:09.104025725`, mtime `.106025702`, `sha256 41add0c190bec97b142c74a5f5ac1dade63b14eed91dcbfe2b7b2282822f7e84`:
+
+```
+owner llama-swap-ocho-planner-4b · scope planner · class batch · need_mib 3800 · headroom_mib 256
+pid 994458 · mode run · acquired_at 1792623009 (=15:50:09) · expires 1792709409 (=2026-10-22 15:50:09) · ttl 86400
+```
+
+Holder **and** work certify, weakest last: wrapper `994458` **ALIVE** (`ps` lstart `Wed Oct 21 15:50:08`, ppid `2809` = llama-swap, args `gpu-lease.sh run --owner llama-swap-ocho-planner-4b --scope planner --need-mib 3800 --ttl 86400 -- …`); child `994544` **ALIVE** RSS 1 466 112 KiB = 3482 MiB, `LISTEN 127.0.0.1:5806`, cgroup `…/app.slice/llama-swap.service`; `:8080/running` = **one** entry `{ocho-planner-4b, state ready, ttl 0, proxy http://localhost:5806}`; capture `/tmp/gpu-lease.Rm1K9h` ino 2500, 1637 B, **birth `15:50:09.194024671` = +90 ms after the record birth**, mtime `15:50:13.630972724`, `sha256 639e0fb2594b76f69d3e76f2d0d01b98fe34ff12f46874ba3060579e8e4236b3`, carrying `load_model: …/Qwen3.5-4B-UD-Q4_K_XL.gguf`, `model loaded`, and task 0 served **3255 tokens, truncated 0**; round `ocho-planner-polymarket.service` `15:50:03 Starting → 15:50:13 Finished` **exit 0**, 3.123 s CPU / 10.132 s wall / 141.1 M peak — and per `2026-10-21-a-rounds-resource-line-is-accounted-to-another-cgroup` R1 that peak is booked to `llama-swap.service`, so it is **not** evidence either way about the load; the load is attested by the pid, the port and the capture.
+
+Cost to fit: `3800 + 256 = 4056` against `6268` free = **fits by 2212 MiB, no swap, no eviction needed**. The pick text agrees (`ocho-planner-4b (30% weight, cycle 59126)`) and the record's own `need_mib 3800` proves it independently of the pick text.
+
+The round was **productive**: `plans/latest_plan.json` 1390 B mtime 15:50, log `💾 Plan saved to …/plans/latest_plan.json (venue=polymarket)` + `📊 Prediction logged to ocho_predictions.jsonl [politics/overlap+sentiment/medium]`.
+
+## 3. The open band was six consecutive refused 9B picks, read off the pick log
+
+Each line names its cycle, so the mapping is in the artifact and not inferred:
+
+| pick | round (journal) | outcome |
+|---|---|---|
+| 59120 | 14:50:03 → `status=1/FAILURE` 14:50:10 (6.498 s wall / 3.026 s CPU) | 9B refused; **evicted the smol** (`2026-10-21-a-refusal-that-cannot-fit-still-evicts-the-tenant-it-found`) |
+| 59121 | 15:00:03 → FAILURE 15:00:10 (6.396 s) | 9B refused |
+| 59122 | 15:10:03 → FAILURE 15:10:09 (6.331 s) | 9B refused |
+| 59123 | 15:20:03 → FAILURE 15:20:09 (6.021 s) | 9B refused |
+| 59124 | 15:30:03 → FAILURE 15:30:09 (6.306 s) | 9B refused |
+| 59125 | 15:40:03 → FAILURE 15:40:10 (6.421 s) | 9B refused |
+| **59126** | 15:50:03 → **Finished 15:50:13 exit 0** | **4B loaded — close edge** |
+
+Pick log, verbatim tail: `…59124 ocho-planner (60%) · 59125 ocho-planner (60%) · 59126 ocho-planner-4b (30%)`; counter `model_cycle_counter.txt` = `59127`, mtime `15:50:09.015078790` = **89 ms before the record birth** (post-increment for 59126, so no unlogged consumer between pick and load — `2026-10-15-a-silent-consumer-leaves-a-gap-in-the-pick-log` R1). No `/tmp/gpu-lease.*` capture exists anywhere in the band: newest before the close was `tp9saP` mtime `14:40:12.374`, next is `Rm1K9h` at `15:50:09.194` — so the six refusals issued no load, and 6456 against 6268 = **188 MiB short**, the standing 9B constant.
+
+Open edge, two artifacts, 185 ms apart: journal FAILURE second `14:50:10` and (cited) the 14:50 record birth `14:50:09.815`. Width to the close edge: **3599.104 s – 3599.289 s**. Six rounds × 600 s = 3600 s → **residual 0.711–0.896 s**, i.e. ~0.12 s per round of pick→record latency, which is the order the counter→record gap shows (89 ms this round).
+
+## 4. What the band cost, in the only currency that is not free
+
+Over the 3599 s the planner lane wrote **nothing**: `latest_plan.json` stayed at **14:30:11.272** (cited from the 14:56 filing; the file is now 15:50:13-ish and overwritten), the one round that did load (14:40 smol) died downstream on `[plan] Contract not found: None`, and the close's own round wrote a 1390 B plan 0.4 s after the load. The card's arithmetic forbids reading that band as idle capacity: **Kev-4B 4289 + planner-4B 4056 = 8345 > 8192 by 153 MiB**, both orders, with a further 1498 MiB of unleased aux floor on the card (`2026-10-21-a-rung-that-cannot-fit-is-a-scheduled-self-eviction`, `2026-10-21-a-heartbeat-is-not-an-evaluation`). The two lanes cannot both hold this card, so every open window IS the scope's outage and every fitting load IS the tenant's exclusion — the same fact from two sides.
+
+## Rulings
+
+**R1 — Price a window in the scope's output over the same band, not in the card's idleness.** The band 14:50:10 → 15:50:09 measured 0 plans, 6 refused rounds and 1 downstream parse failure; the closed state that replaced it began with a 1390 B plan 0.4 s after the load. With `4289 + 4056 = 8345 > 8192`, "free VRAM" is never a surplus on this card — it is the planner-4B's absence, and a watcher that reports open as opportunity without the netted output is reporting the tenant's gain as if it were the operator's. This extends `2026-10-14-a-window-that-only-opens-when-the-planner-is-down` (which named the phenomenon) by pricing it over a full measured band, and `2026-10-14-a-window-opened-by-a-failed-load` R1 ("a symptom, not capacity") by supplying the co-residency arithmetic that makes "not capacity" a constant rather than a suspicion. Scope note: this is a statement about **this** card's 8 GiB and these two rungs, not about admission gates in general.
+
+**R2 — Quote a band's width as a count of picks, with a seconds bracket; a bare seconds figure hides which artifact each end came from.** Six refusals × 600 s is the mechanism; the measured width is 3599.10–3599.29 s, and the 185 ms disagreement between the band's two candidate open-edge artifacts (journal second vs record birth) is *wider* than any per-round residual, so the bracket must be carried rather than collapsed. The 0.7–0.9 s shortfall against 3600 is consistent with ~0.12 s/round of pick→record latency (89 ms measured this round) but is **not** proven to be exactly that. Parent: `2026-10-21-a-rounds-resource-line-is-accounted-to-another-cgroup` R2 (a width is a run of infeasible picks); added here is the sub-second residual and the rule that unlike artifacts may not be mixed at the two ends.
+
+**R3 — The resident holder, not the schedule, owns the closed interval — and the rotation says when it ends.** `pos = cycle mod 10` (0–5 = 9B, 6–8 = 4B, 9 = smol; holds for 59106, 59119, 59120–59126 and every pick checked today). With the counter at 59127: **16:00 = pos 7 = 4B**, **16:10 = pos 8 = 4B** (a pick that finds the slot resident is not a load — `2026-10-16-a-pick-that-finds-the-slot-resident-is-not-a-load` — so 994544 should survive both), **16:20 = pos 9 = smol**, whose load evicts the 4B and leaves ~4626 free = **still ≥ 4289 → window reopens at ~16:20:10**; if the smol does not evict, the 9B pick at **16:30 (pos 0)** refuses, evicts whatever is resident and reopens at ~16:30:09. **Forward statement, filed before the event:** the window reopens in the interval (16:20:09, 16:30:10] and the closed interval is bounded by 994544's lifetime. **Falsifier:** a reading of free ≥ 4289 while pid 994544 is resident and serving, or a closed reading at 16:35 with the counter past 59130.
+
+**SCORED 2026-10-21 16:41 PDT → `rulings/2026-10-21-a-boundary-forecast-scores-on-which-refusal-evicted.md`:** the outcome happened (open, free 6268) via the SECOND leg; the primary leg is refuted by its own arithmetic (a smol that loads is 2672 MiB resident ⇒ free 3596 < 4289 — it cannot reopen the window it occupies), and the interval's far edge cannot be dated from any artifact (llama-swap timestamps nothing, capture mtime only lower-bounds the release, the record is a last-write register), so the score is carried as **TRUE at 16:30:10 / FALSE at 16:40:10** rather than collapsed to the outcome.
+
+## Not done, deliberately
+
+No lease taken, no model loaded, no run triggered, **no message sent** — both premises measured, not assumed:
+
+- **No `@ocho`:** the diff carries no `global → planner` transition (the token is identical on both sides), so the clause's trigger never fired; his scoped-planner item is closed in **his own rows** — `profiles/ocho/state.db` id 9249 (user) / 9267 (assistant), `max(id)` still **16551**, no newer reply. A true-but-redundant DM into a closed item is the drop-hazard class.
+- **No `@llama`:** this is a **close** edge and the fallback clause is scoped to an open one he has not taken; at write the reading is 2781 free = 1508 MiB the wrong way, so a "window is open" page would be false before it was written and still false after the ~27 min channel latency. He is self-authorized under the operator precedence clause and is the actor. His lane remains **empty, not merely quiet**: `profiles/llama/cron/` has **no `jobs.json`**, only `.jobs.lock` / `.tick.lock`, `executions.db` mtime `2026-10-12 06:33:07.322361061`, `output/` empty, while `ticker_heartbeat` `1792623220.148591` (mtime 15:53:40.1) == `ticker_last_success` `1792623220.1537466` — a beat certifies a **clock**, not an evaluation (`2026-10-21-a-heartbeat-is-not-an-evaluation`).
+
+**Kev took nothing across the 3599 s band or since** — `grep -rliE 'arcade|kev|model-test' ~/.local/state/gpu-lease/` rc 1, NO MATCH; `scopes/` = `planner` only; `lease.d/` ABSENT; `ps -eo pid,args | grep -E 'kev[-_]?4b|kev_run|llama-model-test|arcade-lease'` rc 1 (no such process); `find $HOME -maxdepth 5 -name kev_run_bundle_full.json -o -name coresidency_d1_kev.json` → nothing. Recorded as **absence of artifacts and processes**, never as proof that no raw load ran. **Read-only throughout**: `gpu-lease.sh`, `llama-swap.yaml`, the planner lease, the planner service/unit and the driver were read, never written; the 15:50 load was the timer's.
+
+**Detector state, for the instrument file:** persisted `last_output_hash` = `b391e197e2dd93bd192de8fb5032234dddf64392b061189066f28952145820b1` = `sha256("planner_at=planner kev_window=closed")` at 36 B — the same digest this profile recorded for a **different** closed state twelve hours earlier (03:26, holder 635152), which is the whole limitation of hash-token state: it certifies the string, never the token's referent. Still unimplemented: the detector prints no owner/pid/need/liveness beside `planner_at` and appends no line of its own (`2026-10-15-a-delivery-outage-is-a-hole-in-the-log` R3) — this edge exists in the log only because an agent ran.
+
+**Flagged for Mike, not acted on:** (1) the 188 MiB 9B shortfall is unchanged and is the sole manufacturer of these windows — every 9B pick evicts the fitting rung and then refuses, for runs of up to six rounds; (2) Kev has taken none of today's windows and has not run since 2026-10-12 22:41:49 while his cron tree has no job list, so the standing self-authorisation still has nothing executing it — the blocker is the missing `jobs.json`, which this watcher cannot create; (3) the aux floor (Bonsai 1364 + vision 134 = 1498 MiB, both `--n-gpu-layers 0`, both unleased) is the only lever that would let the 9B rung fit without touching the gates.
+
+**Prior art, run BEFORE this file existed** (`priorart.py rulings`, 341 records): F1 0.177 = `2026-10-14-a-window-opened-by-a-failed-load` (shared: opened, window — that one ruled the open edge is a symptom; this one prices the band and supplies the co-residency arithmetic), F2 0.144 = `2026-10-14-a-window-that-only-opens-when-the-planner-is-down` (the phenomenon named; R1 prices it), 0.153 = `2026-10-19-a-reboot-opens-a-window-the-primary-slot-is-priced-out-of`; width proposals peaked at 0.165 = `2026-10-19-a-window-width-is-the-distance-to-the-next-rung-that-fits` (cited as parent, not duplicated), 0.161, 0.139, 0.133. No REVIEW-band prior art. `check_index.py` after appending.
+
+---
+
+## INSTANCE 2026-10-22 12:40:29 → 12:51 PDT — same mechanism, a WIDER shortfall, and a rotation-dated close edge
+
+**Not a new ruling, deliberately.** `priorart.py rulings` was run BEFORE this block existed, over 365 records: **REVIEW 0.405** `2026-10-14-a-window-that-is-a-rung-of-a-rotation`, **REVIEW 0.221** `2026-10-13-a-fresh-record-from-a-failed-acquire` ("a fresh record from a failed acquire is evidence of the FAILURE, not of a holder"), weak 0.170 `2026-10-14-a-window-opened-by-a-failed-load`. Both halves of today's finding are already owned, so this is filed as a dated instance under annotate-never-edit rather than as a duplicate — the discipline `priorart.py` exists to enforce. What is new is two numbers, recorded below.
+
+**Diff:** `planner_at=planner` **IDENTICAL both sides** (no flip, no `@ocho`) · **`kev_window=closed → open`**.
+**Bracket:** previous persisted sample `cron/output/67530e415818/2026-10-22_12-36-52.md` (155 B, no change) → current `monitor_last_output.txt` mtime `12:47:52.062` ⇒ the edge lies in **(12:36:52, 12:47:52]** and is pinned inside that interval by the 12:40 round.
+
+### The open edge is a refusal, and the refusal evicted the tenant that was holding the card shut
+
+| round | pick | `cycle mod 10` | outcome |
+|---|---|---|---|
+| 12:00:23 | 59256 | 6 = 4B | Finished 12:00:33 |
+| 12:10:23 | 59257 | 7 = 4B | Finished 12:10:31 |
+| 12:20:00 | 59258 | 8 = 4B | Finished 12:20:08 — wrote `plans/latest_plan.json` 12:20:08.861 (1400 B), **the last plan on disk** |
+| 12:30:23 | 59259 | 9 = smol | **FAILURE 12:30:32** — downstream, but the smol stayed resident ⇒ free < 4289 at the 12:36:52 sample (`closed`) |
+| 12:40:23 | 59260 | 0 = 9B | **FAILURE 12:40:29** (6.306 s wall / 3.022 s CPU / 141.5 M peak) — refused, smol gone ⇒ **open** |
+| 12:50:00 | 59261 | 1 = 9B | **FAILURE 12:50:06** — still open at this read |
+
+`pos = cycle mod 10` (0–5 9B, 6–8 4B, 9 smol) holds on all six of today's rounds, so the closed interval was **exactly one round**: 12:30:32 → 12:40:29 ≈ **597 s**.
+
+### The standing shortfall has WIDENED: 317 MiB, not the 188 MiB this ledger has carried since 2026-10-21
+
+Live at write — three identical reads 12:51:17 / :18 / :19: `used 1752` · `free 6139` · util 0–2 %. Compute apps: `pid 2360` Bonsai **1470 MiB** + `pid 72233` LFM2.5-VL 134 MiB, both unleased (`--n-gpu-layers 0`) ⇒ **aux floor 1604 MiB**, up from 1498 because the Bonsai tenant restarted (pid 2812 → 2360).
+
+`6200 + 256 headroom = 6456` against **6139 free = 317 MiB short**. The 9B rung has not fit since this floor grew; both refusals today are that same 317. This is `2026-10-15-a-moving-state-quoted-as-a-constant` reaching the shortfall itself: 188 was never a property of the 9B — it is `6456 − (ceiling − aux floor)`, so it moves whenever a CPU-offload tenant restarts.
+
+`planner_at=planner` is again **file-existence over a retry loop**: the record was rewritten twice — `pid 127974` (mtime 12:40:29.532) then `pid 133793` (mtime 12:50:06.669, 491 B) — **both DEAD, `/proc` absent for both**, `/running` = `[]`, no model port, no planner `llama-server`. Two fresh records with dead pids 600 s apart is precisely the signature filed on 2026-10-13, re-observed.
+
+### Forward statement, filed before the event
+
+Counter `model_cycle_counter.txt` = **59262** ⇒ 13:00 (59262, pos 2), 13:10 (3), 13:20 (4), 13:30 (5) are all **9B** picks and are all priced out by the same 317 MiB, so **the card stays OPEN across them**; **13:40 = 59266 = pos 6 = the first 4B pick**, which fits (`3800 + 256 = 4056` against 6139, **by 2083 MiB**) ⇒ **the window closes at the 13:40 round, ≈13:40:3x, width ≈3600 s**, unless a Kev-4B acquire closes it first by taking the card itself.
+
+**Falsifier:** free ≥ 4289 at a sample after 13:41 with a planning model resident, or a `closed` reading before 13:40 with the counter below 59266.
+
+### Not done, each withheld on a measured premise
+
+- **No acquire, no model load, no run action.** `gpu-lease.sh`, `llama-swap.yaml`, the planner lease, the service and the units were read, never written; the 12:40 and 12:50 rounds were the timer's.
+- **No `@ocho` DM.** The token is identical on both sides so the clause's trigger never fired, and his item was re-read in **his own rows** at write: `profiles/ocho/state.db` id **9249** (user) / **9267** (assistant, "adopted it as binding"), `max(id)` **16551**, no newer message on the scoped-planner thread.
+- **No `@llama` ping.** This is the first tick of the window and he self-authorises under the operator precedence clause, so a page would be the preemption the coordination clause forbids. The standing flag still holds and is measured, not inherited: his `cron/` has **no `jobs.json`** (`executions.db` mtime `2026-10-12 06:33`, `output/` empty) while `ticker_heartbeat` = **1792698650.99 = 12:50:50** — a live clock with nothing evaluating it (`2026-10-21-a-heartbeat-is-not-an-evaluation`). Kev has taken nothing in this window: `grep -rliE 'arcade|kev|model-test' ~/.local/state/gpu-lease/` **rc 1**, `scopes/` = `planner` only, no matching process.
+- **Detector limitation unchanged:** the token carries no owner/pid/need/liveness beside `planner_at`, so this edge exists in the log only because an agent ran.
+
+## INSTANCE 2026-10-22 13:14:51 → 13:25:52 PDT — the forecast's 4B rung arrived 20 minutes early, from the other consumer, one counter increment past the value the arm named
+
+Sample bracket: the persisted sample at **13:14:51** (`planner_at=planner kev_window=open`, `no_change`, agent suppressed) and the monitor sample at **13:25:52** (`planner_at=planner kev_window=closed`) ⇒ the transition lies inside a 11 m 01 s bracket; `planner_at` is IDENTICAL on both sides, so **no global→planner flip, no `@ocho` DM** (his rows re-read at write: `profiles/ocho/state.db` id **9249** user / **9267** assistant, `max(id)` **16551** at `2026-10-20 12:56:41` — nothing newer on the scoped-planner thread).
+
+### The close edge, dated on three artifacts inside one second-class
+
+`scopes/planner/record.json` birth **13:20:06.357** (492 B) owner `llama-swap-ocho-planner-4b` class `batch` need **3800** + headroom 256 = 4056, `mode=run`, `pid 151226`, `acquired_at 1792700406` = 13:20:06, `expires_at 1792786806` = **2026-10-23 13:20:06**, `ttl 86400`; wrapper **151226 ALIVE** (S, started 13:20:06) with child **151312 ALIVE** (Sl, 3482 MiB, port 5806); `/running` one entry `ocho-planner-4b state=ready`, `/health` `{"status":"ok"}`; capture `/tmp/gpu-lease.6Jpcyq` mtime **13:20:11.082** carrying `load_model: loading model '…/Qwen3.5-4B-UD-Q4_K_XL.gguf'` + `model loaded` + `listening on 127.0.0.1:5806` and **one served task** (prompt eval 3654 tok @ 2897.97 tok/s, eval 125 tok @ 96.38 tok/s); `plans/latest_plan.json` **13:20:11.180** `model_slot ocho-planner-4b`, and `ocho_predictions.jsonl` row `2026-10-22T20:20:11.180580+00:00`. So the close is a holder that **loaded and did the lane's work**, not a refusal and not a round's exit status (`2026-10-22-a-close-belongs-to-the-holder-that-loaded-not-the-round-that-failed`).
+
+### What the forecast got right and what it got wrong
+
+The 12:53 instance forecast `13:40 = 59266 = pos 6 = the first 4B pick ⇒ close ≈13:40:3x, width ≈3600 s`. Measured: `model_cycle_counter.txt` = **59267**, mtime **13:20:06.265680913** — the same second as the lease birth — and `59267 mod 10 = 7`, while `59266 mod 10 = 6`, both of which the pick map reads as **4B**. The **rung identity was right** (a 4B pick at pos 6/7 is what closed the card) and **the round it was assigned to was wrong**: the ledger read 59262 at 12:50 and the counter stood at 59267 at 13:20:06, i.e. **+5 across three rounds** (13:00, 13:10, 13:20 — the 13:10 round's journal is `status=1/FAILURE` 5.892 s and the 13:20 round `Finished` 10.708 s), so the counter does **not** advance one per round: the 13:00 tick carries the hourly `ocho-shadow-polymarket` runner (`13:00:23 → 13:01:20`, `polymarket_paper_trader.py --llm` → `call_ocho_planner.py`) beside the planner round, which is the same two-draws-one-tick structure the 07:01 tick identified. A rung→round mapping built at one draw per round therefore **hands the predicted rung to an earlier round than the one it names**, and pos 6 arrived at 13:20, twenty minutes before the forecast's 13:40.
+
+The stated falsifier was `free ≥ 4289 at a sample after 13:41 with a planning model resident, or a closed reading before 13:40 with the counter below 59266`. **Neither arm fired and neither could have**: the counter was already 59267 at 13:20:06, so "closed before 13:40 **with the counter below 59266**" excludes the very case that occurred — an early close at or past the forecast value. The forecast was therefore **pre-empted, not scored**: an arm that pins an exact counter value in a shared, twice-written counter cannot score an earlier arrival. Score such a forecast **by rung identity and by "any counter"**, and date the draw off the counter's **mtime**, not off the round the counter was predicted to belong to.
+
+The close also **held**: the 13:30 round (`13:30:23 → 13:30:31 Finished`, counter **59268** at `13:30:29.257`) wrote plan `2026-10-22T20:30:31.661387+00:00` with **no new `/tmp/gpu-lease.*`** and only the existing capture `/tmp/gpu-lease.6Jpcyq` growing 1637 → 2454 B, i.e. the same wrapper and the same 3482 MiB llama-server served the next round — this is what a `ttl 86400` liveness-first holder looks like from outside: one load, many rounds, the card shut for the whole term rather than for one rotation step.
+
+### Live at write, three timed reads 13:27:18.537 / 13:27:20.572 / 13:27:22.606
+
+**8192 total / 5239 used / FREE 2652 / util 1 % / 38 C ⇒ CLOSED, 1637 MiB under the 4289 Kev-4B gate**; compute apps 151312 = 3482 + 2360 Bonsai = 1470 + 72233 vision = 134 ⇒ 5086 of 5239; the unleased aux floor is **1604 MiB** (both at `--n-gpu-layers 0`), and used+free = 7892 = the ~300 MiB driver reservation, so 6268 remains the empty-card ceiling. The holder is `mode=run` with `ttl 86400` under the standing **liveness-first** policy (a live `mode=run` pid is never reclaimable at any age), so the card stays shut not for a rotation rung but **until llama-swap's next group switch or the holder's exit** — the reason this window did not reopen behind the 13:20 load is a lease term, not a resident model.
+
+### Nothing taken, nothing sent
+
+**Kev took nothing across the window:** `grep -rliE 'arcade|kev|model-test' ~/.local/state/gpu-lease/` **rc 1**, `scopes/` = `planner` only, no matching process, `Kev-4B-Q4_K_M.gguf` still `2026-10-05 15:55:40` / 3033489824 B, newest `ocho_arena/results` entry `2026-10-10 10:17:34` ⇒ **no `@llama`** (CLOSE edge, and the fallback reading 2652 vs 4289 is 1637 MiB the wrong way — false before it was written; he self-authorises under the precedence clause). His lane is unchanged and still not an evaluation: `profiles/llama/cron/` has **no `jobs.json`**, `executions.db` mtime `2026-10-12 06:33:07`, `output/` unchanged, `ticker_heartbeat` **1792700810.997 = 13:26:50** while `state.db`'s newest message is **2026-10-19 14:59:49** (1924 messages, 4 sessions, all `cli_close`) — a live clock over a lane that has not evaluated anything in three days (`2026-10-21-a-heartbeat-is-not-an-evaluation`). **No `@ocho`**, no run action, no acquire, no release, no model load, no unit: `gpu-lease.sh`, `llama-swap.yaml`, the planner lease and the driver were read only; the 13:20 load was the executor's own request through llama-swap.
+
+## INSTANCE 2026-10-22 13:20:06 → 14:00:29 PDT — the term that shut the card was never the lease's: the holder's own group stopped it at +29 m 54 s, and the width came off the pick map
+
+**Diff:** `planner_at=planner` **IDENTICAL both sides** (no flip, no `@ocho`) · **`kev_window=closed → open`**.
+**Bracket:** persisted samples `2026-10-22_13-41-52.md` and `_13-52-52.md` (155 B each, `no_change`) → this sample 14:03:5x ⇒ the edge lies inside, and the artifacts date it to **14:00:29**.
+
+### The close was the 4B I certified at 13:31 — and it held for 40 m 23 s, not for its 86400 s term
+
+| instant | event | artifact |
+|---|---|---|
+| 13:20:06.357 | 4B acquire: `owner=llama-swap-ocho-planner-4b`, need 3800+256, `mode=run`, `ttl 86400`, pid **151226** | `scopes/planner/record.json` birth (13:20 instance) |
+| 13:40:xx | round 59268 = 4B, **reuse** — no capture born, existing `6Jpcyq` keeps growing | capture mtime 13:40; pick line |
+| 13:50:00 → 13:50:09 | round 59269 = **smol**, loaded on `:5808` and **wrote a plan** | capture `nbO2O6` birth 13:50:08.947 (`SmolLM3-3B…`, `model loaded`, one served task); `plans/latest_plan.json` 13:50:09.040 `model_slot=ocho-planner-smol`; journal `Starting 13:50:00 → Finished 13:50:09` |
+| 14:00:23 → 14:00:29 | round 59270 = **9B**, evicted that smol and **aborted** | journal `status=1/FAILURE` 14:00:29; `llama-swap.log` last write 14:00:29.925, `group: starting ocho-planner failed: aborted`; record rewritten 14:00:29.640 with pid **174487, dead** |
+
+`151226` and its child `151312` are both **DEAD** at write (`/proc` absent, no listener on 58xx, `/running` = `[]`). So the live `mode=run` holder whose `ttl` the 13:31 instance correctly called "the term that shuts the card" was stopped **by its own group** at 13:50:00, not by any competitor, and the card stood shut **2423.28 s = 40 m 23 s** (13:20:06.357 → 14:00:29.640), not 86 400 s. That instance's hedge — *"until llama-swap's next group switch or the holder's exit"* — named the exact escape hatch, and the escape hatch is what fired; the *width* was set by the pick map, never by the term.
+
+**Pick map scored 5/5, artifact to pick line** (`pos = cycle mod 10`; 0–5 = 9B, 6–8 = 4B, 9 = smol): 59266 pos 6 = 4B **loaded** 13:20 · 59267 pos 7 = 4B **reuse** · 59268 pos 8 = 4B **reuse** · 59269 pos 9 = smol **loaded and planned** · 59270 pos 0 = 9B **refused**. The counter read **59271**, mtime 14:00:29.250 — 390 ms before the record birth, so no unlogged consumer inside the round.
+
+### The open edge is a refusal that evicted its tenant, on a card that is empty and still too small
+
+**Live at write, three identical reads 14:03:58 / 14:04:39 / 14:04:40:** 8192 total / **1752 used / FREE 6139** / util 0–1 % / 37 °C ⇒ **+1850 over the 4289 gate**. Compute apps: `2360` Bonsai **1470** + `72233` LFM2.5-VL **134**, both `--n-gpu-layers 0`, **both unleased** ⇒ aux floor **1604**; nothing else resident.
+
+`6200 + 256 = 6456` against a **drained** card's 6139 = **317 MiB short**. The 9B is priced out at the empty-card ceiling, not merely when something is resident — the same widened shortfall the 12:53 instance recorded, unchanged.
+
+### Filed before the event
+
+Counter 59271 ⇒ 14:10–14:50 draw 59271–59275 = pos 1–5 = **five consecutive 9B picks**, each 317 short, each refused with nothing but the 13:50 smol to evict ⇒ **the card stays OPEN across them**; **15:00 = 59276 = pos 6 = the first 4B** (4056 vs 6139, fits by 2083) ⇒ **close ≈15:00:3x, width ≈3600 s from 14:00:29.640**, unless a Kev acquire takes the card first. **Falsifier:** a `closed` reading before 15:00 with nothing resident, a `/tmp/gpu-lease.*` capture born inside a 14:10–14:50 round, or a 14:10–14:50 pick that is not `ocho-planner`.
+
+### Not done, each withheld on a measured premise
+
+- **No `@ocho`.** The token is identical on both sides — the clause's trigger never fired — and his item is closed in his own rows (`profiles/ocho/state.db`, `max(id)` **16551**, ids 9249 / 9267).
+- **No `@llama`.** First sampled tick of this window; he self-authorises at 6139 ≥ 4289 and the fallback is scoped to a couple of ticks of inaction. The standing flag still measures true: `profiles/llama/cron/` has **no `jobs.json`**, while `ticker_heartbeat` / `ticker_last_success` were rewritten at **14:04** — a beat certifies a clock, not an evaluation.
+- **Kev took nothing:** `grep -rliE 'arcade|kev|model-test'` over `~/.local/state/gpu-lease/` **rc 1**, `scopes/` = `planner` only, `lease.d/` absent, no matching process, `Kev-4B-Q4_K_M.gguf` still 2026-10-05 15:55.
+- **Read-only:** `gpu-lease.sh`, `llama-swap.yaml`, the planner lease, the units and the driver untouched. The 13:50 smol load and the 14:00 refusal were the timer's, through llama-swap.
+- **No new ruling filed, deliberately:** the eviction mechanism is on file (`2026-10-21-a-rung-that-cannot-fit-is-a-scheduled-self-eviction` — group `planners` has `swap: true`, so starting a member evicts the previous; `a-refusal-that-cannot-fit-still-evicts-the-tenant-it-found`; `a-window-width-is-the-distance-to-the-next-rung-that-fits`). This instance adds a width (2423.28 s) and a scored hedge, not a mechanism.
+
+## Instance 2026-10-22 17:20 — a window opened by a 9B refusal that also killed a working smol
+
+Fourth sampled instance today, filed as an instance and not a new ruling: the mechanism is
+`a-rung-that-cannot-fit-is-a-scheduled-self-eviction` (group `planners` has `swap: true`, so starting a member
+evicts the previous) plus `a-refusal-that-cannot-fit-still-evicts-the-tenant-it-found`. Watcher tick
+`arcade-window-watch` `67530e415818`, diff `planner_at=planner` (identical) · **`kev_window=closed → open`**.
+
+**Live card, two reads 17:26:02 / 17:30:5x, byte-identical on memory:** 8192 total / 1752 used / **FREE 6139** /
+util 0 % / 39 °C ⇒ **+1850 over the 4289 gate**. Compute apps: `2360` Bonsai **1470** + `72233` LFM2.5-VL **134**,
+both `--n-gpu-layers 0`, both **unleased** ⇒ aux floor **1604**; `:8080/running` `{"running":[]}`, no listener on 58xx.
+
+**The open edge is the 17:20 9B refusal, dated by three artifacts inside 7 s:** record as read at 17:26
+(`need_mib=6200`, `pid=304962`, `acquired_at` **17:20:12**) with that pid **absent from `/proc`**; journal
+`17:20:06 Starting → 17:20:13 status=1/FAILURE`; `llama-swap.log` `17:20:13` ending
+`group: starting ocho-planner failed: aborted`. **The tenant it evicted was doing work:** capture
+`/tmp/gpu-lease.22bPAA` birth **17:10:08.694849584**, 17:10 round **exit 0**, `plans/latest_plan.json` 1063 B
+`model_slot=ocho-planner-smol`. The 17:30 round rewrote the record (`pid=311170`, also dead) and refused again;
+**zero captures were born in either round**, so neither 9B ever issued a load — both stopped the tenant, then aborted.
+
+**Closed band** 16:40:18.073061759 (the fitting 4B load) → 17:20:12 = **2393.9 s = 3.99 × 600 s rounds**; picks
+59286 4b / 59287 4b reuse / 59288 4b reuse / 59289 smol / 59290 9B / 59291 9B, counter 59292 one increment per
+round, `pos = cycle mod 10` scored **6/6**. `6200 + 256 = 6456` vs a **drained** 6139 = **317 MiB short** — the
+day's widened constant behind every open band.
+
+**Not done, each on a measured premise:** no `@ocho` (token identical ⇒ trigger never fired; his item re-read
+closed in his own rows, `max(id)=16551`, ids 9249 / 9267; and this tick the record is a crashed acquire with a dead
+pid, so the flip premise is false at write — a DM would have certified a flip that is not serving); no `@llama`
+(first tick of the window, he self-authorises at 6139 ≥ 4289, `profiles/llama/cron/` still has **no `jobs.json`**
+and `active_sessions.json` = `{"entries": []}`, heartbeat 17:31:51 certifying a clock and not an evaluation);
+nothing acquired, released, loaded, configured or unit-touched; `gpu-lease.sh`, `llama-swap.yaml`, the planner lease,
+the service and the driver untouched.
+
+**Filed before the event:** 59292 (17:40) pos 2 = 9B, 317 short, nothing resident ⇒ card **stays open at 6139**;
+59293–59295 (17:50–18:10) pos 3–5 = 9B; **59296 (18:20) pos 6 = the first 4B** (4056 vs 6139, fits by 2083) ⇒ **close
+≈18:20:1x, width ≈3600 s from 17:20:12**, unless a Kev acquire takes the card first. **Falsifier:** a capture born
+inside a 17:40–18:10 round, a `closed` reading with nothing resident before 18:20, or an 18:20 pick that is not
+`ocho-planner-4b`.
+
+## Instance 2026-10-22 18:20 — the filed 4B pick closed the window at 3598.9 s, and the forecast scores three of three
+
+Watcher tick `arcade-window-watch` `67530e415818`, diff `planner_at=planner` (identical) · **`kev_window=open → closed`**.
+Fifth sampled instance today, filed as an instance and not a new ruling: the mechanism is already on file
+(`a-rung-that-cannot-fit-is-a-scheduled-self-eviction`; `a-refusal-that-cannot-fit-still-evicts-the-tenant-it-found`),
+and this instance contributes a width, a scored forecast and a confirmed close.
+
+**The close edge is the file, inside one second-class:** record `acquired_at` **18:20:06** PDT (`1792718406`,
+`expires_at` 2026-10-23 18:20:06, `mode=run`, `need_mib` 3800 + `headroom_mib` 256 = **4056**); holder pid **339283** —
+`bash gpu-lease.sh run --owner llama-swap-ocho-planner-4b --class batch --scope planner --need-mib 3800 --ttl 86400` —
+**alive in `/proc`**, child **339380** = `llama-server … Qwen3.5-4B-UD-Q4_K_XL.gguf --port 5806` holding **3482 MiB**;
+capture `/tmp/gpu-lease.5KUs4E` birth **18:20:11.1690422410**, 1637 B, sha256
+`dd4cf19b03ac644ff8b68b0233c622718ad6c9475bb77097eae2764095a2f3f4`, carrying `loading model` → `model loaded` →
+`listening on http://127.0.0.1:5806` and then a **served task** (prompt eval 3631 tok @ 2898.02 tok/s, eval 96 tok @
+96.19 tok/s); `:8080/running` returns `ocho-planner-4b` **state=ready**, proxy `localhost:5806`. Unlike the 14:00 and
+17:26 instances, `planner_at=planner` is here TRUE OF A LIVE SERVING HOLDER and not of a crashed acquire.
+
+**Live card at write** 18:29:5x: 8192 total / 5239 used / **FREE 2652** / util 0 % / 40 °C ⇒ **1637 MiB under** the
+4289 gate. Compute apps `2360` Bonsai 1470 + `72233` LFM2.5-VL 134 (both `--n-gpu-layers 0`, unleased, aux floor 1604)
++ `339380` planner-4B 3482.
+
+**Width** 17:20:12 → 18:20:11 = **3598.9 s = 5.998 × 600 s rounds**, against the `≈3600 s from 17:20:12` filed above.
+
+**The filed forecast scores 3 of 3, and no falsifier leg fired:** (a) the four 9B rounds 59292–59295 (17:40–18:10)
+issued **no load** — `find /tmp -maxdepth 1 -name 'gpu-lease.*' -newermt 17:20:15 ! -newermt 18:20:10` is EMPTY — so the
+card stayed open at 6139 exactly as filed; (b) the `closed` reading has 3482 MiB resident, so it is not the "nothing
+resident" leg; (c) the 18:20 pick (59296, pos 6 = the first 4B of the cycle) **is** `ocho-planner-4b`, 4056 vs 6139
+fitting by 2083. With the 6/6 pick-map score of the preceding band, the map has now been scored on both edges of this
+window.
+
+**Kev took nothing and has nothing to take:** `find ~/.local/state/gpu-lease` = `lease.mutex` + `backups/` +
+**`scopes/planner/record.json` only** — no arcade lease, no `llama-model-test` lease, `lease.d/` absent, no matching
+process (`pgrep -af` matched only the watcher's own shell), no capture naming Kev.
+
+**Not done, each on a measured premise:** no `@ocho` (token identical ⇒ trigger never fired; his board is unmoved at
+`max(id)=16551` with 16551 rows, the same value the 17:26 instance read, so his scoped-planner item stays closed in his
+own rows); no `@llama` (the window is closed and free 2652 < 4289, so his standing self-authorisation has no purchase,
+and the fallback clause is scoped to an open window he has not taken across a couple of ticks); nothing acquired,
+released, loaded, configured or unit-touched; `gpu-lease.sh`, `llama-swap.yaml`, the planner lease, the service and the
+driver untouched. The 18:20 load was the timer's, through llama-swap.

@@ -1,0 +1,41 @@
+# A latch the failing class rewrites every round has no expiry — and the wheel's digit map issues the next close
+
+**Tick:** `67530e415818` (arcade-window-watch), sample `2026-10-29 19:17:19.903566` PDT.
+**Diff:** `kev_window closed -> open`. `planner_at=planner` **identical on both sides** ⇒ the `global->planner` branch never fired, no `@ocho` DM owed.
+**Nature:** RECORD ONLY — no acquire, no release, no load, no unit or config touched, no message.
+
+## What changed, from the artifact
+
+The window opened because **the 19:10 planner round drew the model class that cannot fit and emptied the card trying**:
+
+- Round journal `ocho-planner-polymarket.service`: `19:10:06 Starting -> 19:10:13 status=1/FAILURE`, exit 1, 3.170 s CPU / 6.457 s wall / **143.1 M** peak, Main PID `514474`.
+- Counter `chilly_containment/agents/ocho/ocho_sandbox/model_cycle_counter.txt` = **`60421`**, mtime `19:10:12.226613647` — 450 ms **before** the lease cell was born (read-then-incremented). Last digit 1 ⇒ pos 1 ⇒ the 60 %-weight 9B.
+- Lease cell `scopes/planner/record.json`: 491 B, ino `10272179`, birth `19:10:12.676536863`, mtime `.677536851`, sha256 `89ccff43…cffcba`, `owner=llama-swap-ocho-planner · scope=planner · class=batch · need_mib=6200 · headroom=256 · pid=514580 · mode=run · acquired_at=1793326212 (=19:10:12) · expires_at=1793412612 (2026-10-30T19:10:12) · ttl=86400`. **pid `514580` absent from `/proc`** (and it is not even the unit's Main PID `514474` — the cell records the acquire wrapper, which dies first).
+- No load ever started: **no `/tmp/gpu-lease.*` capture carries a 19:10 birth** (newest is `FAO6XL`, birth `19:01:27.124375247`, the smol); `llama-swap.log` last line `[WARN] group: starting ocho-planner failed: aborted`; **neither `:5806` nor `:5808` has a listener**. A refusal at admission writes a record and a journal failure and leaves no server behind.
+- Card lost exactly the smol: `19:02:19.923572` sample read **closed** (3216 free, `4675 used` with `507890` smol 2672 resident); `19:17:19.903566` reads **open** (`1998 used`). `4675 - 1998 = 2677 ≈ 2672`. The only card-touching event in the bracket is the 19:10 round; mechanism (llama-swap stops the resident rung to make room, then the new draw is refused) is **attributed, not measured** — no capture exists to date the eviction to the second, so the open edge is bounded to `(19:10:06, 19:10:13]`.
+
+## Rulings
+
+**R1 — a cell the failing class rewrites every round cannot be aged by its `expires_at`.**
+The same single-slot cell was rewritten **three times in 60 minutes**: `18:10:19.390` (491 B, sha `689a9d3a…b12133`, pid `470879` dead, 9B refusal), `19:01:27.027` (496 B, sha `1772cad8…`, pid `507797` **alive**, a real smol load), `19:10:12.677` (491 B, sha `89ccff43…`, pid `514580` dead, 9B refusal). Every write stamps `acquired_at = now` and `expires_at = now + 86400`, so the TTL is *always* 24 h out and the cell has not today been older than ten minutes. `expires_at` is therefore not a staleness test at all here; the only usable one is the field the cell carries in its own policy string — *"a `mode=run` holder whose pid is dead is reclaimable"*. Extends `2026-10-14-a-window-opened-by-a-failed-load` R2 (liveness is not existence) one turn: existence is not only failure-evidence, it is **self-renewing** failure-evidence, because the acquiring class re-arms it on a schedule.
+
+**R2 — this window is a guaranteed eviction, so "why is it open" has a structural answer, not a contingent one.**
+Admission arithmetic, unchanged: `used+free 7891` vs total `8192` ⇒ 301 MiB in neither column, empty-scope ceiling **5893**; 9B `6456` is **563 short in every state**, 4B `4056` (1837 spare), smol `3256` (2632 spare). With the three unleased `-ngl 0` tenants (`2347` Bonsai 1364 + `2349` vision 134 + `87744` bge 226 = 1724) on the card, **the 60 %-weight class can never load**, and its failed draw still destroys the resident. So the window is not spare capacity appearing — it is the card emptied by a class that cannot fit, which is exactly the reading `2026-10-14` R1 demands ("the actionable quantity is not *is it open* but *why*"). The fifth filing of `563 short` (18:13, 18:18, 19:02, here) is now best read as a standing property, not a per-tick observation.
+
+**R3 — forecast issued in the form `2026-10-29-the-closing-value-can-be-the-shadow-runs-own-draw` requires: the VALUE first, then the first CONSUMER.**
+Wheel digit map, from measured picks: `60406/60407/60408` 4B, `60409` smol, `60410` 9B, `60416/60417` 4B, `60419` smol, `60421` 9B ⇒ **last digit 0–5 = 9B (60 %), 6–8 = 4B (30 %), 9 = smol (10 %)**. From `60421`: rounds `19:20/19:30/19:40/19:50` draw `60422–60425` = pos 2–5 = **9B refusals** ⇒ window holds; the **first fitting value is `60426` (pos 6, 4B, `4056 ≤ 5893`)**, first consumer the **20:00** main round ⇒ **close ≈ `20:00:11`** (round start + ~11 s: `17:30:11.710` cell birth on a `17:30:05` start, `19:01:19.403` close on a `19:00:09` start), width `19:10:13 -> 20:00:11 ≈ 2998 s ≈ 5.00 × 600 s`. **The shadow guard is EMPTY this horizon** — `ocho-shadow-polymarket.timer` next fire `Fri 01:00:00`, well outside it — so unlike the 18:13 filing a clock arm *is* issuable here. Caveat named, not assumed away: `ocho-sentiment` fired `19:15:08` and the counter mtime stayed `19:10:12.226`, so non-planner calendar units are not wheel consumers as measured; `ocho-resolve` `19:30` and the three `20:00` units are the unmeasured risk to the counter arm only.
+
+## Actions
+
+- **No `@ocho`.** The diff's flip token was identical both sides so the branch never fired; and had it fired, the record behind it is an orphan (pid dead, no capture, no listener) so a "confirmed live end-to-end" sentence would have been **false at write**. His one open item is closed in **his own rows** — `profiles/ocho/state.db` (ro) `max(id)=17405`, id `16736` "Verified independently, and **the item is closed.**", db mtime `07:42:24.538` untouched. A DM would re-open a closed item into a channel that drops on `target_busy` with no receipt.
+- **No `@llama`.** First open tick of this window (edge < 10 min, less than one round); the fallback is for a window untaken across several ticks, and he self-authorises at `--scope arcade`. Away side re-measured **absent**: `grep -rliE 'arcade|kev|model-test' ~/.local/state/gpu-lease` rc 1, `scopes/` = planner only, no `lease.d/`, no Kev/model-test process.
+- **Standing flag for Mike, re-measured 19:19:** `profiles/llama/cron/` still has **no `jobs.json`** (`executions.db` 24576 B frozen `2026-10-12 06:33`, `output/` untouched since 10-12) while `ticker_heartbeat` 23 B is rewritten `19:19:18.990` — a live clock over an empty job set, so the operator-approved precedence clause still has **no executor**. Second consecutive window that can stand open with nothing to take it.
+- **Operator decision flagged, not taken:** the wheel draws a class (9B) that is 563 MiB short of a ceiling fixed by 1724 MiB of unleased `-ngl 0` tenants, so ~60 % of rounds are guaranteed failures that evict the resident and open a Kev window. The one lever is the unleased set — a fact about the card, **not** an instruction to stop a tenant (`2026-10-08-gpu-two-schedulers-live-budget` R1/R6). Read-only throughout.
+
+## Evidence (live at write)
+
+- Card, **four identical reads `19:17:22`–`19:19:2x`**: 8192 total / **1998 used / 5893 FREE** / util 6–15 % / 40 °C ⇒ **OPEN by 1604 MiB** over the 4289 gate (`4033 + 256`, `scripts/arcade_window_watch.sh:47`).
+- Compute apps: `2347` 1364 (Bonsai, `-ngl 0`), `2349` 134 (vision), `87744` 226 (bge-small) — all unleased; `:5806`/`:5808` no listener; `pgrep -af 'SmolLM3|ocho-planner'` matched only this tick's own shell.
+- Record sha256 `89ccff43580077bd621fb0d0ca7118f21b8130d0870ec21fed439a4321cffcba`; policy field present and read (liveness-first, dead `mode=run` holder reclaimable).
+
+**R3's first step scored inside this same tick (19:20:59, before write):** the `19:20:09` round drew counter **`60422`** (counter mtime `19:20:15.361753244`, last digit 2 = pos 2 = 9B) and refused — `Starting 19:20:09 -> 19:20:15 status=1/FAILURE`, 3.169 s CPU / 6.250 s wall / 142.5 M — with the card still `1998 used / 5893 free`. Forecast holds one round in; the close is still owed at `60426` / ≈`20:00:11`.
