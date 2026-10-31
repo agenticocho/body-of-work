@@ -552,7 +552,6 @@ c03cb626a1b2c1edb88fd98ef84d45413ecdae0d22d16329c8f0d022166a816a  ./hermes-ops/d
 d7a340e09e5131e82c6e4f529ac76dad3efda92277fc4add8bffb6d0fe90be6b  ./hermes-ops/drop-ins/tailscaled-ordering.conf
 86a2ffcdbb3e132468452f13383b615a68f8154cc042af7fc89b45b42d475d9b  ./hermes-ops/scripts/hermes_freeze_sampler.py
 1fa52ab2f699c8bf77a2757a713c27e7094d7ebf0a82da7d72094ed3f9f46e90  ./LICENSE
-71617ce61714cdd8fd85e1997f2f0782020a3e60771f98acf6c2ae82433687e2  ./MANIFEST.sha256
 01b1bfa158c41f2aee149b78bd78cce6e500c420f413d8a9be9a9249ef9671d4  ./PUBLICATION-NOTES.md
 eaa8d092175f8268365bb1ac4d246182ccfa6de076c033a85b1af86a138ba502  ./README.md
 1ba042cb17e3aca06a68415526e926ada464bf873c8592c3326125cd72cb397f  ./skills/apple/apple-notes/SKILL.md
@@ -935,3 +934,4 @@ bd480f51a2e9969c88544003c30b7539b7df0b7358703f99b0495514c2dd878a  ./skills/softw
 22b996996ae2bf252b31cfd2636231f08936729a381dce7ba8bfa4afb8ffe8c6  ./skills/web/blocked-page-recovery/scripts/recover_page.py
 b71179e82ff27c002e6593e792d9a64dad9a444901b8938f30204fa115592061  ./skills/web/blocked-page-recovery/SKILL.md
 1cee33fe7aaddc9d8ce9319f4452dc9a357952feba049810e392a8ecf67ea28e  ./skills/web/DESCRIPTION.md
+e2ea0d2334f84b47ad68c663a255c08a378e9c6e35c4c5108b36fbbca6ebf32e  ./verify_manifest.sh
