@@ -1,7 +1,7 @@
 1fa52ab2f699c8bf77a2757a713c27e7094d7ebf0a82da7d72094ed3f9f46e90  ./LICENSE
 01b1bfa158c41f2aee149b78bd78cce6e500c420f413d8a9be9a9249ef9671d4  ./PUBLICATION-NOTES.md
 eaa8d092175f8268365bb1ac4d246182ccfa6de076c033a85b1af86a138ba502  ./README.md
-bd577c503e32f851aec271f8dbba0d95cbf446f97dfe14424c00cea92e51d178  ./governance/INDEX.md
+d55cf703ed0a04877fd948f8914b0767f923ba88a8c0c88faf75bd789dc391b5  ./governance/INDEX.md
 318b890244526e84ac26b582300f0baab0f566f80e953b0d0ef80dd64e50b428  ./governance/attic/2026-10-21-a-window-opened-by-refusals-is-the-planner-lanes-outage.md.bak-0707
 44e8de9c9f9e8370ddf2a65c79b7f8ae74cb66edd8ffc75faefec59cb2d17de2  ./governance/attic/README.md
 acfc140119c349bd780c41b8f95704ab1c09ebd2c905cd93c35607e82b692cb2  ./governance/rulings/2026-10-06-bad-check-manufactures-findings.md
@@ -539,6 +539,7 @@ f098d504781fbda87b8ed4fd8e5be5e2fa9de636fcdab3a42c04e637f39f3b52  ./governance/r
 e6cd037d09293586275572e00ecb9e51e2c10ed1f25e5f7162c81f7c165305ae  ./governance/rulings/2026-10-31-a-shared-object-makes-a-cross-box-count-agree-by-construction.md
 c5323c5a7a695845a04ca1a9828c4b9f589d9882d845d98dadb4c8a4a108d41b  ./governance/rulings/2026-10-31-a-sixty-minute-gate-closed-on-the-draw-the-open-tick-forecast.md
 ee5e5243df963c8b4587ef0301b08a2f03830fc3ae25dbfa49a3a257060ae352  ./governance/rulings/2026-10-31-a-token-born-of-a-refusal-names-a-need-the-card-cannot-satisfy.md
+babbf811609d9cd5c5c0fb805ca2a95f3d1db127a99d8820264f0325da28dcb2  ./hermes-ops/config-iterations/README.md
 b25bcfd12ff46bced6cd32e4d323d1b1cf4eafd84cc97d5e24f7f0507e4f702e  ./hermes-ops/config-iterations/nvidia-egl-fallback.json
 c00d6349a8db666ca8d8ae5d684a5b991d74d019b71f85266cd0aacfc06a800d  ./hermes-ops/config-iterations/nvidia-egl-fallback.json.bak-20261006-064246
 c00d6349a8db666ca8d8ae5d684a5b991d74d019b71f85266cd0aacfc06a800d  ./hermes-ops/config-iterations/nvidia-egl-fallback.json.bak-20261007
