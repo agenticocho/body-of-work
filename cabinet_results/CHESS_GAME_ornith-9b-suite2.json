@@ -1,0 +1,122 @@
+{
+ "card": "CARD_chess.md",
+ "entrant": "ornith-9b-suite2",
+ "gguf": "/home/chilly1/moltbook_pipeline/models/Ornith-1.5-9B-Q4_K_M.gguf",
+ "staged_as": "INSTRUMENT",
+ "frozen": {
+  "threads": 1,
+  "hash_mb": 64,
+  "multipv": 1,
+  "depth": 18,
+  "lost_cp": -300,
+  "hold_cp": -100,
+  "cap": 30,
+  "max_tokens": 2048,
+  "prompt_digest": "76fa8848e9adf514",
+  "prompt_template": "You are playing a game of chess. You control one side.\nPosition (FEN): {fen}\n\nFIRST LINE: your move alone, in coordinate notation such as e2e4, and nothing else.\nIf you judge the position lost beyond recovery, the first line is exactly: RESIGN\nAFTER the first line you may explain your reasoning if you wish.\n\nThe move goes on the first line. Reason after, not before."
+ },
+ "compute": {
+  "server_argv": [
+   "/home/chilly1/llama.cpp/build/bin/llama-server",
+   "-m",
+   "/home/chilly1/moltbook_pipeline/models/Ornith-1.5-9B-Q4_K_M.gguf",
+   "-c",
+   "4096",
+   "-ngl",
+   "99",
+   "--port",
+   "58701",
+   "--no-webui",
+   "--parallel",
+   "1"
+  ],
+  "server_binary": "/home/chilly1/llama.cpp/build/bin/llama-server",
+  "ngl": 99,
+  "ctx": 4096,
+  "parallel": 1,
+  "server_pid": 2398800
+ },
+ "termination": "serving-failure",
+ "why": "the model was STILL DELIBERATING when the 2048-token cap hit (2048 tokens, 6060 characters of reasoning in `reasoning_content`, `content` empty). NO MOVE WAS COMMITTED, so there is no illegal move to report -- MISSING VALUE, not a verdict about the entrant. The deliberation is preserved at CHESS_REASONING_ornith-9b-suite2.txt",
+ "measures": {
+  "plies": 5,
+  "premature_collapse": 0,
+  "miscalibrated_persistence": 0,
+  "plies_in_lost_positions": 0,
+  "unreadable_evaluations": 0,
+  "calibrated": false
+ },
+ "wall_s": 82.0,
+ "rows": [
+  {
+   "ply": 0,
+   "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+   "raw": "e2e4",
+   "move_uci": "e2e4",
+   "move_san": "e2e4",
+   "eval_before": 37,
+   "eval_after": -28,
+   "termination": null,
+   "result": "HOLDABLE",
+   "secs": 1.703674554824829,
+   "gen_tokens": 102,
+   "budget_hit": false
+  },
+  {
+   "ply": 1,
+   "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+   "raw": "d7d5",
+   "move_uci": "d7d5",
+   "move_san": "d7d5",
+   "eval_before": -28,
+   "eval_after": 62,
+   "termination": null,
+   "result": "HOLDABLE",
+   "secs": 4.704125881195068,
+   "gen_tokens": 308,
+   "budget_hit": false
+  },
+  {
+   "ply": 2,
+   "fen": "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+   "raw": "e4d5\n\n**Reasoning:**\n\nThe position arises from an opening where Black has pushed ...d5 and White has a pawn on e4. The most natural and strongest move is to capture: **e4xd5**.\n\nThis achieves several things at once:\n- **Wins a pawn** \u2014 Black's d5 pawn is now gone.\n- **Gains a strong central presence** \u2014 White's pawn lands on d5, a powerful outpost that cramps Black's position and controls key central squares.\n- **Opens lines** \u2014 The capture opens the diagonal for White's light-squared bishop (c1) and gives White a lasting spatial advantage.\n\nBlack's d5 pawn was the key lever of their setup; removing it leaves Black with a weakened center and a cramped kingside. White retains full development and a comfortable position.",
+   "move_uci": "e4d5",
+   "move_san": "e4d5",
+   "eval_before": 62,
+   "eval_after": -55,
+   "termination": null,
+   "result": "HOLDABLE",
+   "secs": 13.231708526611328,
+   "gen_tokens": 884,
+   "budget_hit": false
+  },
+  {
+   "ply": 3,
+   "fen": "rnbqkbnr/ppp1pppp/8/3P4/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 2",
+   "raw": "e7e6",
+   "move_uci": "e7e6",
+   "move_san": "e7e6",
+   "eval_before": -55,
+   "eval_after": 107,
+   "termination": null,
+   "result": "IN-BAND",
+   "secs": 15.333154916763306,
+   "gen_tokens": 1025,
+   "budget_hit": false
+  },
+  {
+   "ply": 4,
+   "fen": "rnbqkbnr/ppp2ppp/4p3/3P4/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 3",
+   "raw": "d5e6\n\n**Reasoning:**\n\nWhite has a strong advanced pawn on d5, and Black's e6 pawn is the only thing restraining it. Capturing dxe6 wins a pawn outright and opens the d-file for the rook on d1.\n\nAfter dxe6, Black must recapture (either fxe6 or dxe6), which:\n- Opens the d-file, activating the rook on d1\n- Frees the c1 bishop's diagonal\n- Removes Black's key defensive pawn\n\nThis is a clean, principled improvement that consolidates White's spatial and material advantage. Nothing else is as good \u2014 keeping the pawn on d5 is fine, but taking the pawn and opening lines is clearly best.",
+   "move_uci": "d5e6",
+   "move_san": "d5e6",
+   "eval_before": 107,
+   "eval_after": -110,
+   "termination": null,
+   "result": "HOLDABLE",
+   "secs": 14.604382514953613,
+   "gen_tokens": 974,
+   "budget_hit": false
+  }
+ ]
+}

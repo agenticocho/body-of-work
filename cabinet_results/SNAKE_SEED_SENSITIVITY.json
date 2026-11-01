@@ -1,0 +1,40 @@
+{
+  "control": "seed-sensitivity",
+  "eating_policy": {
+    "name": "baseline-greedy-safe",
+    "eats_apple": true,
+    "seeds": {
+      "1": {
+        "chain_digest": "05ec38c631bad848",
+        "eaten": 9,
+        "revisits": 7
+      },
+      "7": {
+        "chain_digest": "20b384451cbb894a",
+        "eaten": 8,
+        "revisits": 2
+      }
+    },
+    "chain_differs_across_seeds": true,
+    "pass": true
+  },
+  "non_eating_policy": {
+    "name": "baseline-cycle",
+    "eats_apple": false,
+    "seeds": {
+      "1": {
+        "chain_digest": "af12a0c5d14ce52f",
+        "eaten": 0,
+        "revisits": 0
+      },
+      "7": {
+        "chain_digest": "af12a0c5d14ce52f",
+        "eaten": 0,
+        "revisits": 0
+      }
+    },
+    "chain_identical_across_seeds": true,
+    "pass": true
+  },
+  "overall_pass": true
+}

@@ -1,0 +1,66 @@
+{
+ "card": "CARD_chess.md",
+ "entrant": "ministral-3b-suite2",
+ "gguf": "/home/chilly1/moltbook_pipeline/models/Ministral-3-3B-Instruct-2512-UD-Q4_K_XL.gguf",
+ "staged_as": "INSTRUMENT",
+ "frozen": {
+  "threads": 1,
+  "hash_mb": 64,
+  "multipv": 1,
+  "depth": 18,
+  "lost_cp": -300,
+  "hold_cp": -100,
+  "cap": 30,
+  "max_tokens": 2048,
+  "prompt_digest": "76fa8848e9adf514",
+  "prompt_template": "You are playing a game of chess. You control one side.\nPosition (FEN): {fen}\n\nFIRST LINE: your move alone, in coordinate notation such as e2e4, and nothing else.\nIf you judge the position lost beyond recovery, the first line is exactly: RESIGN\nAFTER the first line you may explain your reasoning if you wish.\n\nThe move goes on the first line. Reason after, not before."
+ },
+ "compute": {
+  "server_argv": [
+   "/home/chilly1/llama.cpp/build/bin/llama-server",
+   "-m",
+   "/home/chilly1/moltbook_pipeline/models/Ministral-3-3B-Instruct-2512-UD-Q4_K_XL.gguf",
+   "-c",
+   "4096",
+   "-ngl",
+   "99",
+   "--port",
+   "58701",
+   "--no-webui",
+   "--parallel",
+   "1"
+  ],
+  "server_binary": "/home/chilly1/llama.cpp/build/bin/llama-server",
+  "ngl": 99,
+  "ctx": 4096,
+  "parallel": 1,
+  "server_pid": 2398618
+ },
+ "termination": "illegal-move",
+ "why": "illegal: the model's first line is 'e4', which is well formed and IS NOT a legal move in this position (20 are legal). A FAILURE OF THE ENTRANT -- the move list is not supplied, so the candidates must be derived. [TAXONOMY NOTE: `illegal-move` is NOT one of CARD_chess.md's five frozen terminations. It becomes reachable only once the prompt stops supplying the move list, and it is an ENTRANT failure that the card has no value for. REQUIRES RATIFICATION before any of these numbers are scored.]",
+ "measures": {
+  "plies": 1,
+  "premature_collapse": 0,
+  "miscalibrated_persistence": 0,
+  "plies_in_lost_positions": 0,
+  "unreadable_evaluations": 0,
+  "calibrated": false
+ },
+ "wall_s": 1.4,
+ "rows": [
+  {
+   "ply": 0,
+   "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+   "raw": "e2e4\n\nThis is a classic opening move that opens the center and prepares to develop pieces aggressively. The pawn on e2 moves to e4, controlling the central squares d4 and f4. This move is often seen in the Italian Game or as a direct approach to central control.",
+   "move_uci": "e2e4",
+   "move_san": "e2e4",
+   "eval_before": 37,
+   "eval_after": -28,
+   "termination": null,
+   "result": "HOLDABLE",
+   "secs": 0.5895769596099854,
+   "gen_tokens": 62,
+   "budget_hit": false
+  }
+ ]
+}

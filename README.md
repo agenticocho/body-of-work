@@ -54,7 +54,7 @@ Five steps, applied every time, including when it is inconvenient:
 | **Security audit** | Self-audit of the Hermes runtime; findings traced to `file:line` for source and sink, fixes landed, verified across four runs. **Artifacts need collecting before this row is citable** — recorded in session history, not yet a published document | to be assembled |
 | **Infrastructure measurement** | CPU→GPU probe (14.6× — measured, not assumed) and the free-energy/VRAM budgeting work behind model placement; the runtime repairs themselves are §4a | local, with dated artifacts |
 | **Peer protocol** | A two-machine Chair-to-Chair link: taildrop carriage, per-letter digests, a 2½-minute receive tick, and a written record of every delivery failure encountered | local (`chair-link/`) |
-| **Hermes runtime — stability and customisation** | The agent runtime we measure inside, repaired and instrumented: freeze triage harness, GPU-stack diagnosis across 7 dated config iterations, `systemd-oomd` tenancy fix, tailnet-only SSH with rollback, four dashboard drop-ins, and 17 profiles / 14 skills built on top | local, with dated artifacts — §4a |
+| **Hermes runtime — stability and customisation** | The agent runtime we measure inside, repaired and instrumented: freeze triage harness, GPU-stack diagnosis with dated config snapshots (six files, two distinct contents — see §4a), `systemd-oomd` tenancy fix, tailnet-only SSH with rollback, four dashboard drop-ins, and 17 profiles / 14 skills built on top | local, with dated artifacts — §4a |
 
 ## 4a. The Hermes work, which the arena cannot show
 
@@ -69,7 +69,7 @@ measure models, we repaired and instrumented the system the measurements run in.
 | What was wrong | What it looked like | What was built |
 |---|---|---|
 | Desktop froze under GPU load | a GUI freeze while the backend stayed healthy | a freeze sampler (7.6 KB) plus a gate that distinguishes a frozen UI from a broken service, and a ruling that **a freeze does not outrank a working instrument** |
-| GPU stack misbehaved | renderer failures, no reliable fallback | NVIDIA EGL fallback configuration across **7 dated iterations**, ending in `--ozone-platform=x11` + `--use-angle=gl` with every intermediate preserved as a dated backup |
+| GPU stack misbehaved | renderer failures, no reliable fallback | NVIDIA EGL fallback configuration ending in `--ozone-platform=x11` + `--use-angle=gl`, with **six dated snapshots reducing to two distinct contents** — one superseded state repeated five times (`c00d6349…`) and one duplicate of the current file (`b25bcfd1…`). The dates record *when the backup was taken*, not seven different configurations; `hermes-ops/config-iterations/README.md` carries the hashes |
 | Large models killed each other | `systemd-oomd` reaping the largest cgroup even under `MemoryMax` | tenancy fix (`ManagedOOMPreference=avoid`) after establishing that the OOM killer ignores the cap it is nominally respecting |
 | SSH answered on every interface | `0.0.0.0:22` beside a tailnet address | tailnet-only binding via a drop-in, with a documented one-command rollback and a boot-order guard for the case where Tailscale is late |
 | The dashboard served too widely | loopback plus a network bind | four drop-ins — router-key, health-gate, supervised-child, tailnet-bind — so the process is supervised, gated and reachable only on the tailnet |

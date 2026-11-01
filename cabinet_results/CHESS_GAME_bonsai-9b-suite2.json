@@ -1,0 +1,66 @@
+{
+ "card": "CARD_chess.md",
+ "entrant": "bonsai-9b-suite2",
+ "gguf": "/home/chilly1/moltbook_pipeline/models/Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf",
+ "staged_as": "INSTRUMENT",
+ "frozen": {
+  "threads": 1,
+  "hash_mb": 64,
+  "multipv": 1,
+  "depth": 18,
+  "lost_cp": -300,
+  "hold_cp": -100,
+  "cap": 30,
+  "max_tokens": 2048,
+  "prompt_digest": "76fa8848e9adf514",
+  "prompt_template": "You are playing a game of chess. You control one side.\nPosition (FEN): {fen}\n\nFIRST LINE: your move alone, in coordinate notation such as e2e4, and nothing else.\nIf you judge the position lost beyond recovery, the first line is exactly: RESIGN\nAFTER the first line you may explain your reasoning if you wish.\n\nThe move goes on the first line. Reason after, not before."
+ },
+ "compute": {
+  "server_argv": [
+   "/home/chilly1/src/PrismML-Bonsai-demo-20261016/bin/cuda/llama-server",
+   "-m",
+   "/home/chilly1/moltbook_pipeline/models/Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf",
+   "-c",
+   "4096",
+   "-ngl",
+   "99",
+   "--port",
+   "58701",
+   "--no-webui",
+   "--parallel",
+   "1"
+  ],
+  "server_binary": "/home/chilly1/src/PrismML-Bonsai-demo-20261016/bin/cuda/llama-server",
+  "ngl": 99,
+  "ctx": 4096,
+  "parallel": 1,
+  "server_pid": 2400963
+ },
+ "termination": "illegal-move",
+ "why": "illegal: the model's first line is 'e2e4', which is well formed and IS NOT a legal move in this position (20 are legal). A FAILURE OF THE ENTRANT -- the move list is not supplied, so the candidates must be derived. [TAXONOMY NOTE: `illegal-move` is NOT one of CARD_chess.md's five frozen terminations. It becomes reachable only once the prompt stops supplying the move list, and it is an ENTRANT failure that the card has no value for. REQUIRES RATIFICATION before any of these numbers are scored.]",
+ "measures": {
+  "plies": 1,
+  "premature_collapse": 0,
+  "miscalibrated_persistence": 0,
+  "plies_in_lost_positions": 0,
+  "unreadable_evaluations": 0,
+  "calibrated": false
+ },
+ "wall_s": 19.6,
+ "rows": [
+  {
+   "ply": 0,
+   "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+   "raw": "e2e4\n\nThis is the opening move of the game. I choose e4 to claim control of the central squares (e4 and d4) and open lines for my light-squared bishop and queen. It is a standard, solid opening move that allows for rapid development of my pieces.",
+   "move_uci": "e2e4",
+   "move_san": "e2e4",
+   "eval_before": 37,
+   "eval_after": -28,
+   "termination": null,
+   "result": "HOLDABLE",
+   "secs": 8.36467456817627,
+   "gen_tokens": 989,
+   "budget_hit": false
+  }
+ ]
+}

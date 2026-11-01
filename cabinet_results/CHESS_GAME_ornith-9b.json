@@ -1,0 +1,144 @@
+{
+ "card": "CARD_chess.md",
+ "entrant": "ornith-9b",
+ "gguf": "/home/chilly1/moltbook_pipeline/models/Ornith-1.5-9B-Q4_K_M.gguf",
+ "staged_as": "INSTRUMENT",
+ "frozen": {
+  "threads": 1,
+  "hash_mb": 64,
+  "multipv": 1,
+  "depth": 18,
+  "lost_cp": -300,
+  "hold_cp": -100,
+  "cap": 30,
+  "max_tokens": 2048,
+  "prompt_digest": "76fa8848e9adf514",
+  "prompt_template": "You are playing a game of chess. You control one side.\nPosition (FEN): {fen}\n\nFIRST LINE: your move alone, in coordinate notation such as e2e4, and nothing else.\nIf you judge the position lost beyond recovery, the first line is exactly: RESIGN\nAFTER the first line you may explain your reasoning if you wish.\n\nThe move goes on the first line. Reason after, not before."
+ },
+ "compute": {
+  "server_argv": [
+   "/home/chilly1/llama.cpp/build/bin/llama-server",
+   "-m",
+   "/home/chilly1/moltbook_pipeline/models/Ornith-1.5-9B-Q4_K_M.gguf",
+   "-c",
+   "8192",
+   "-ngl",
+   "99",
+   "--port",
+   "58714",
+   "--no-webui",
+   "--parallel",
+   "1",
+   "--cache-type-k",
+   "q8_0",
+   "--cache-type-v",
+   "q8_0"
+  ],
+  "server_binary": "/home/chilly1/llama.cpp/build/bin/llama-server",
+  "ngl": 99,
+  "ctx": 8192,
+  "parallel": 1,
+  "cache_type_k": "q8_0",
+  "cache_type_v": "q8_0",
+  "server_pid": 3046931
+ },
+ "termination": "serving-failure",
+ "why": "the model was STILL DELIBERATING when the 2048-token cap hit (2048 tokens, 6638 characters of reasoning in `reasoning_content`, `content` empty). NO MOVE WAS COMMITTED, so there is no illegal move to report -- MISSING VALUE, not a verdict about the entrant. The deliberation is preserved at CHESS_REASONING_ornith-9b.txt",
+ "measures": {
+  "plies": 3,
+  "premature_collapse": 0,
+  "miscalibrated_persistence": 0,
+  "plies_in_lost_positions": 0,
+  "unreadable_evaluations": 0,
+  "calibrated": false
+ },
+ "wall_s": 47.4,
+ "rows": [
+  {
+   "ply": 0,
+   "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+   "raw": "e2e4",
+   "move_uci": "e2e4",
+   "move_san": "e2e4",
+   "eval_before": 37,
+   "eval_after": -28,
+   "termination": null,
+   "result": "HOLDABLE",
+   "secs": 1.5801115036010742,
+   "gen_tokens": 98,
+   "budget_hit": false
+  },
+  {
+   "ply": 1,
+   "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+   "raw": "d7d5",
+   "move_uci": "d7d5",
+   "move_san": "d7d5",
+   "eval_before": -28,
+   "eval_after": 62,
+   "termination": null,
+   "result": "HOLDABLE",
+   "secs": 2.4740347862243652,
+   "gen_tokens": 155,
+   "budget_hit": false
+  },
+  {
+   "ply": 2,
+   "fen": "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+   "raw": "e4d5\n\n**Reasoning:**\n\nThe position arises from 1.e4 d5. White has a pawn on e4 and Black has a pawn on d5. The most natural and strongest move is to capture the pawn: e4xd5.\n\nThis wins a pawn and opens the center. After the capture, White's e-pawn advances to d5, cramping Black's position. Black will need to respond (with ...d6, ...e6, or ...Nf6) to challenge the advanced pawn, but White comes out a pawn up with a solid central presence.\n\nThe move is clean, gains material, and improves White's position.",
+   "move_uci": "e4d5",
+   "move_san": "e4d5",
+   "eval_before": 62,
+   "eval_after": -55,
+   "termination": null,
+   "result": "HOLDABLE",
+   "secs": 11.059272050857544,
+   "gen_tokens": 727,
+   "budget_hit": false
+  }
+ ],
+ "controls": {
+  "control_1_accept_legal_e2e4": {
+   "pass": true,
+   "input": "e2e4",
+   "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+   "resolved": "e2e4",
+   "reason": "resolved-head",
+   "engine_legal_count": 20
+  },
+  "control_2_reject_illegal_e4d5": {
+   "pass": true,
+   "input": "e4d5",
+   "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+   "resolved": null,
+   "reason": "illegal: the model's first line is 'e4d5', which is well formed and IS NOT a legal move in this position (20 are legal). A FAILURE OF THE ENTRANT -- the move list is not supplied, so the candidates must be derived.",
+   "engine_legal_count": 20
+  },
+  "control_3_count_agrees_with_engine": {
+   "pass": true,
+   "fens": [
+    {
+     "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+     "engine_legal_count": 20,
+     "recomputed_equal": true
+    },
+    {
+     "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+     "engine_legal_count": 29,
+     "recomputed_equal": true
+    },
+    {
+     "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1",
+     "engine_legal_count": 20,
+     "recomputed_equal": true
+    }
+   ]
+  },
+  "control_3_measurement_29_vs_20": {
+   "pass": true,
+   "ply0_initial_legal_count": 20,
+   "ply2_after_e4_e5_legal_count": 29,
+   "e4d5_legal_at_ply2": false
+  }
+ }
+}

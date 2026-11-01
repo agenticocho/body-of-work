@@ -1,0 +1,47 @@
+{
+ "passed": true,
+ "controls": {
+  "control_1_accept_legal_e2e4": {
+   "pass": true,
+   "input": "e2e4",
+   "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+   "resolved": "e2e4",
+   "reason": "resolved-head",
+   "engine_legal_count": 20
+  },
+  "control_2_reject_illegal_e4d5": {
+   "pass": true,
+   "input": "e4d5",
+   "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+   "resolved": null,
+   "reason": "illegal: the model's first line is 'e4d5', which is well formed and IS NOT a legal move in this position (20 are legal). A FAILURE OF THE ENTRANT -- the move list is not supplied, so the candidates must be derived.",
+   "engine_legal_count": 20
+  },
+  "control_3_count_agrees_with_engine": {
+   "pass": true,
+   "fens": [
+    {
+     "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+     "engine_legal_count": 20,
+     "recomputed_equal": true
+    },
+    {
+     "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+     "engine_legal_count": 29,
+     "recomputed_equal": true
+    },
+    {
+     "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1",
+     "engine_legal_count": 20,
+     "recomputed_equal": true
+    }
+   ]
+  },
+  "control_3_measurement_29_vs_20": {
+   "pass": true,
+   "ply0_initial_legal_count": 20,
+   "ply2_after_e4_e5_legal_count": 29,
+   "e4d5_legal_at_ply2": false
+  }
+ }
+}

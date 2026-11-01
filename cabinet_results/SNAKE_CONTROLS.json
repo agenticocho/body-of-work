@@ -1,0 +1,33 @@
+{
+  "cabinet": "snake",
+  "task": "t_f17d1fcf",
+  "commit_note": "snake seed-sensitivity + apple reachability + loop detection + digest claim",
+  "controls": {
+    "seed_sensitivity": {
+      "file": "SNAKE_SEED_SENSITIVITY.json",
+      "pass": true,
+      "summary": "eating policy (greedy-safe) chain differs across seeds 1/7; non-eating policy (cycle) chain identical."
+    },
+    "apple_reachability": {
+      "file": "SNAKE_REACHABILITY.json",
+      "pass": true,
+      "summary": "first apple at cell (20,20) reachable in 20 steps (cap 120); all four seeds SCORABLE."
+    },
+    "loop_detection": {
+      "field": "score.revisits",
+      "pass": true,
+      "summary": "revisits count added to snake_score.score_trace and to the episode artifact score block."
+    },
+    "digest_claim": {
+      "file": "SNAKE_DIGEST_CLAIM.json",
+      "pass": true,
+      "summary": "bonsai GPU chain == published CPU chain (7f46665eb1a91edf); equality is not evidence of model capability."
+    }
+  },
+  "unscoreable_levels": [],
+  "revisits_example": {
+    "baseline-cycle_s1": 0,
+    "baseline-greedy-safe_s1": 7,
+    "baseline-greedy-safe_s7": 2
+  }
+}

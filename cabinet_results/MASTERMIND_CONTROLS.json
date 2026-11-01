@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "controls": {
+    "control_1_scripted_arm_100": {
+      "pass": true,
+      "wins": 16,
+      "of": 16
+    },
+    "control_2_broken_arm_0": {
+      "pass": true,
+      "wins": 0,
+      "of": 16
+    },
+    "control_3_stored_vs_recomputed_consistent": {
+      "pass": true,
+      "disagreements": 0
+    },
+    "control_4_per_turn_prompt_digest": {
+      "pass": true,
+      "digests": [
+        "e671e8aeaa9ba0840d3cb544edf764f14dde0d14c09bc4d7ccf499ab4f5aaf03",
+        "bf4b31da86dbe0fe3cbd8d81159cf4ea320fa3b5000bc777fd4aff1497259e73",
+        "1af505682d53824ab91d7a8984d140ca04e19e7ebb0383799aaf12a12ceef700",
+        "272819f910465d2f5fb896541d01f8c3783b9537677d6ec0c9e54174f3172618",
+        "d206b9ac8d0f7bd69cad6fcfece5eb203a47fec423f4d2d6cf323aa0d9ee9005",
+        "91c30be6542d8eba4b28555f3b054a98e8c3060b1ca8c282a70b9961977fff06",
+        "e80685c729ec41eaaa9da7ed8196469c7ece35b7a8177a69f91933a0abf855f6",
+        "b5b1af08f2c0bd7af2c70ce91a10c6e1625927d6bc9cd4cb31c0f12e67ce524a",
+        "60785b32273818b00c92d01ca929ceb536eebcd3b6d28c5ae43b4288d31117e2",
+        "802aade4f7d9858e97f1bf7d6be1b4ec31f8d529062ece52b4ae978e8fc7ded9"
+      ]
+    },
+    "control_5_per_state_null": {
+      "pass": true,
+      "sample": [
+        1.0,
+        0.48225308641975306,
+        0.19753086419753085
+      ]
+    }
+  },
+  "fixture_sha256": "ccae01aecd7c9828",
+  "instrument_sha256": "9babe6cded17"
+}

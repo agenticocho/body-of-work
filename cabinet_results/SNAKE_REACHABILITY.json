@@ -1,0 +1,164 @@
+{
+  "control": "apple-reachability",
+  "step_cap": 120,
+  "board": "25x25 torus",
+  "first_apple_fixed_by_file": true,
+  "reachable": true,
+  "plan_length": 20,
+  "levels": {
+    "1": {
+      "first_apple_cell": [
+        20,
+        20
+      ],
+      "start_cell": [
+        10,
+        10
+      ],
+      "computed_plan": [
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D"
+      ],
+      "computed_plan_length": 20,
+      "within_cap": true,
+      "greedy_safe_first_eat_tick": 19,
+      "greedy_safe_eaten_total": 9,
+      "scorable": true,
+      "verdict": "SCORABLE"
+    },
+    "7": {
+      "first_apple_cell": [
+        20,
+        20
+      ],
+      "start_cell": [
+        10,
+        10
+      ],
+      "computed_plan": [
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D"
+      ],
+      "computed_plan_length": 20,
+      "within_cap": true,
+      "greedy_safe_first_eat_tick": 19,
+      "greedy_safe_eaten_total": 8,
+      "scorable": true,
+      "verdict": "SCORABLE"
+    },
+    "13": {
+      "first_apple_cell": [
+        20,
+        20
+      ],
+      "start_cell": [
+        10,
+        10
+      ],
+      "computed_plan": [
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D"
+      ],
+      "computed_plan_length": 20,
+      "within_cap": true,
+      "greedy_safe_first_eat_tick": 19,
+      "greedy_safe_eaten_total": 8,
+      "scorable": true,
+      "verdict": "SCORABLE"
+    },
+    "42": {
+      "first_apple_cell": [
+        20,
+        20
+      ],
+      "start_cell": [
+        10,
+        10
+      ],
+      "computed_plan": [
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "R",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D",
+        "D"
+      ],
+      "computed_plan_length": 20,
+      "within_cap": true,
+      "greedy_safe_first_eat_tick": 19,
+      "greedy_safe_eaten_total": 8,
+      "scorable": true,
+      "verdict": "SCORABLE"
+    }
+  },
+  "unscoreable_levels": [],
+  "overall_pass": true
+}

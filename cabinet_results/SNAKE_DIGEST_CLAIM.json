@@ -1,0 +1,22 @@
+{
+  "control": "bonsai-digest-claim",
+  "cpu_chain_digest": "7f46665eb1a91edf",
+  "gpu_chain_digest": "7f46665eb1a91edf",
+  "equal": true,
+  "cpu_artifact": "/home/chilly1/workspace/ocho_arena/suite2/runs/published_cpu/SNAKE_Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0_s1.json",
+  "gpu_artifact": "/home/chilly1/workspace/ocho_arena/probes/SNAKE_Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0_s1.json",
+  "cpu_score": {
+    "eaten": 0,
+    "best_life": 0,
+    "deaths": 0,
+    "ticks": 120
+  },
+  "gpu_score": {
+    "eaten": 0,
+    "best_life": 0,
+    "deaths": 0,
+    "ticks": 120
+  },
+  "verdict": "EQUAL -- bonsai GPU chain == published CPU chain digest-for-digest",
+  "is_evidence_of": "Nothing about model capability. Both runs scored 0 apples on every seed, so no apple was ever eaten and the seed's RNG state never reached the game; the state chain is therefore fully determined by the fixed board, start cell and initial apple, independent of the serving process, the compute path (CPU vs GPU) or the model's weights. The equality is an instrument property (determinism of a never-eating episode), not evidence that the CPU and GPU processes agree on anything the model did."
+}
