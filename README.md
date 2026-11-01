@@ -23,7 +23,7 @@ consumer GPU, when is that score evidence, and when is it an artefact of the ins
 `handicap-arena` was written to hold cabinet tasks and their instruments. Most of the work that produced those
 instruments happened elsewhere on the same machine and did not fit: the model zoo and its presets, the security
 audit of the runtime the models run inside, the GPU and desktop diagnostics, and the rulings. Publishing the
-arena without this document leaves a reviewer with 25 findings and no account of the machine that made them
+arena without this document leaves a reviewer with 25 finding files (24 distinct) and no account of the machine that made them
 trustworthy.
 
 ## 3. The method
